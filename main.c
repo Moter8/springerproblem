@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define ANSI_COLOR_RED    "" //"\x1b[31m"
 #define ANSI_COLOR_YELLOW "" // "\x1b[33m"
@@ -9,6 +10,7 @@
 
 int *board;
 int sizeX, sizeY;
+char strings[99999] = "Anfang: ";
 
 bool getFieldVal(int posX, int posY);
 void setFieldVal(int posX, int posY, bool val);
@@ -105,12 +107,20 @@ bool simpleBackTracking(int posX, int posY, int numb) {
     //printf("%d %d %d\n",posX, posY, numb);
     
     if (numb == sizeX * sizeY) {
-        printf("?");
+                    
+        char buf[5];
+        sprintf(buf, "(%d,%d) ", posX+1, posY+1);
+        strcat(strings, buf);
+        
         return 1;
     }
     
     for (int i = 0; i <= 7; i++) {
         if (checkFieldValNumb(posX, posY, i, numb)) {
+            char buf[5];
+            sprintf(buf, "(%d,%d) ", posX+1, posY+1);
+            
+            strcat(strings, buf);
             return 1;
         }
     }
@@ -138,8 +148,8 @@ int main() {
     scanf("%d", &initialY);
 */
 
-    sizeX = 5;
-    sizeY = 5;
+    sizeX = 7;
+    sizeY = 7;
     initialX = 3;
     initialY = 1;
 
@@ -153,6 +163,7 @@ int main() {
     printf("%d\n", simpleBackTracking(initialX, initialY, 1));
     printBoard(board, sizeX, sizeY);
     printf("%d",getFieldVal(7,7));
+    printf("\n%s", strings);
 
 
     // WOW
