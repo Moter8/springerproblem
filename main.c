@@ -53,7 +53,6 @@ void printBoard() {
 bool getFieldVal(int posX, int posY) {
     // currentX+x >= 0 && currentX+x <= sizeX-1 && currentY+y >= 0 && currentY+y <= sizeY-1
     if (posX < sizeX && posY < sizeY && posX >= 0 && posY >= 0) {
-        int pos = *(board + posY*sizeY + posX);
         return *(board + posY*sizeY + posX);
     } else {
         return true;   
@@ -100,6 +99,8 @@ bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb) {
             return checkFieldVal(posX - 1, posY - 2, numb);
             break;
     }
+    printf("ERROR\n");
+    return 0;
 }
 
 bool simpleBackTracking(int posX, int posY, int numb) {
@@ -148,22 +149,22 @@ int main() {
     scanf("%d", &initialY);
 */
 
-    sizeX = 7;
-    sizeY = 7;
-    initialX = 3;
-    initialY = 1;
+    sizeX = 5;
+    sizeY = 5;
+    initialX = 0;
+    initialY = 0;
 
     printf("Board Size: %dx%d, Initial X: %d Initial Y: %d\n", sizeX, sizeY, initialX, initialY);
     
-    board = (int *)malloc(sizeX * sizeY * sizeof(int));
+    board = (int *)calloc(sizeX * sizeY, sizeof(int));
     
     *(board + initialY*sizeY + initialX) = 1;
     //printBoard(board, sizeX, sizeY);
     
     printf("%d\n", simpleBackTracking(initialX, initialY, 1));
     printBoard(board, sizeX, sizeY);
-    printf("%d",getFieldVal(7,7));
-    printf("\n%s", strings);
+    printf("%d", getFieldVal(7,7));
+    printf("\n%s\n", strings);
 
 
     // WOW
