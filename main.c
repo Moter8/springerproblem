@@ -10,7 +10,7 @@
 
 int *board;
 int sizeX, sizeY;
-char strings[99999] = "Anfang: ";
+char strings[99999] = "Ergebnis: ";
 
 bool getFieldVal(int posX, int posY);
 void setFieldVal(int posX, int posY, bool val);
@@ -51,7 +51,6 @@ void printBoard() {
 
 // Gibt nur den Wert von einer bestimmten Position aus.
 bool getFieldVal(int posX, int posY) {
-    // currentX+x >= 0 && currentX+x <= sizeX-1 && currentY+y >= 0 && currentY+y <= sizeY-1
     if (posX < sizeX && posY < sizeY && posX >= 0 && posY >= 0) {
         return *(board + posY*sizeY + posX);
     } else {
@@ -60,18 +59,21 @@ bool getFieldVal(int posX, int posY) {
 }
 
 void setFieldVal(int posX, int posY, bool val) {
+    // board = 0x00000  + 1*sizeY (10) + 3 ~ 0x00013
     *(board + posY*sizeY + posX) = val;
 }
 
+// If Destionation X and Y aren't visited, execute simpleBackTracking to possible move to that location.
+// Numb is used to keep track of ?
 bool checkFieldVal(int posX, int posY, int numb) {
     if (!getFieldVal(posX, posY)) {
         return simpleBackTracking(posX, posY, numb + 1);
     } else {
-        return 0;
+        return false;
     }
 }
 
-// Je nachdem welche Nummer man mitgibt, 
+// Possible moves will be checked depending on the fieldNumber.
 bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb) {
     switch (fieldNumber) {
         case 0:
@@ -103,6 +105,7 @@ bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb) {
     return 0;
 }
 
+// ?
 bool simpleBackTracking(int posX, int posY, int numb) {
     setFieldVal(posX, posY, true);
     //printf("%d %d %d\n",posX, posY, numb);
@@ -116,11 +119,13 @@ bool simpleBackTracking(int posX, int posY, int numb) {
         return 1;
     }
     
+    // Versucht alle möglichen Züge von aktuellem Feld auszuführen.
     for (int i = 0; i <= 7; i++) {
         if (checkFieldValNumb(posX, posY, i, numb)) {
+            
+            // Add coordinates to the steps string.
             char buf[5];
             sprintf(buf, "(%d,%d) ", posX+1, posY+1);
-            
             strcat(strings, buf);
             return 1;
         }
@@ -135,7 +140,11 @@ int main() {
     
     int initialX, initialY;
     
-/*
+    sizeX = 7;
+    sizeY = 7;
+    initialX = 0;
+    initialY = 0;
+
     printf("Board Size (x): ");
     scanf("%d", &sizeX);
     
@@ -147,12 +156,9 @@ int main() {
     
     printf("Initial Y Position: ");
     scanf("%d", &initialY);
-*/
 
-    sizeX = 6;
-    sizeY = 6;
-    initialX = 0;
-    initialY = 0;
+
+
 
     printf("Board Size: %dx%d, Initial X: %d Initial Y: %d\n", sizeX, sizeY, initialX, initialY);
     
