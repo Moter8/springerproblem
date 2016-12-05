@@ -149,8 +149,8 @@ int main() {
     scanf("%d", &initialY);
 */
 
-    sizeX = 5;
-    sizeY = 5;
+    sizeX = 6;
+    sizeY = 6;
     initialX = 0;
     initialY = 0;
 
@@ -162,7 +162,7 @@ int main() {
     //printBoard(board, sizeX, sizeY);
     
     printf("%d\n", simpleBackTracking(initialX, initialY, 1));
-    printBoard(board, sizeX, sizeY);
+    printBoard();
     printf("%d", getFieldVal(7,7));
     printf("\n%s\n", strings);
 
