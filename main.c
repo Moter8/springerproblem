@@ -3,20 +3,28 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define ANSI_COLOR_RED    "" //"\x1b[31m"
-#define ANSI_COLOR_YELLOW "" // "\x1b[33m"
-#define ANSI_COLOR_BLUE   "" //"\x1b[34m"
-#define ANSI_COLOR_RESET  "" //"\x1b[0m"
+#define ANSI_COLOR_RED    "\x1b[31m"
+#define ANSI_COLOR_YELLOW "\x1b[33m"
+#define ANSI_COLOR_BLUE   "\x1b[34m"
+#define ANSI_COLOR_RESET  "\x1b[0m"
 
 int *board;
 int sizeX, sizeY;
-char strings[99999] = "Ergebnis: ";
+
+struct coord {
+    int x;
+    int y;
+};
+
+struct coord *steps;
 
 bool getFieldVal(int posX, int posY);
 void setFieldVal(int posX, int posY, bool val);
 bool checkFieldVal(int posX, int posY, int numb);
 bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb);
 bool simpleBackTracking(int posX, int posY, int numb);
+int promptForDigits(char prompt[]);
+int promptForDigitsLimit(char prompt[], int upperLimit);
 
 void printBoard() {
     
@@ -25,21 +33,21 @@ void printBoard() {
         for (int j = 0; j < sizeX; j++) {
             
             if (*(board + i*sizeY + j) == 1) {
-                printf(ANSI_COLOR_YELLOW     "@ "     ANSI_COLOR_RESET);
+                printf(ANSI_COLOR_YELLOW "@ " ANSI_COLOR_RESET);
             } else {
-                         if (i%2==0) {
-                j++;
-                if (j % 2 == 0) {
-                    printf(ANSI_COLOR_RED     "x "     ANSI_COLOR_RESET);
+                if (i%2==0) {
+                    j++;
+                    if (j % 2 == 0) {
+                        printf(ANSI_COLOR_RED "x " ANSI_COLOR_RESET);
+                    } else {
+                        printf(ANSI_COLOR_BLUE "x " ANSI_COLOR_RESET);
+                    }
+                    j--;
                 } else {
-                    printf(ANSI_COLOR_BLUE     "x "     ANSI_COLOR_RESET);
-                }
-                j--;
-            } else {
-                if (j % 2 == 0) {
-                    printf(ANSI_COLOR_RED     "x "     ANSI_COLOR_RESET);
-                } else {
-                    printf(ANSI_COLOR_BLUE     "x "     ANSI_COLOR_RESET);
+                    if (j % 2 == 0) {
+                        printf(ANSI_COLOR_RED "x " ANSI_COLOR_RESET);
+                    } else {
+                        printf(ANSI_COLOR_BLUE "x " ANSI_COLOR_RESET);
                 }
             }   
             }
@@ -105,28 +113,35 @@ bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb) {
     return 0;
 }
 
+void addStepToSteps(int posX, int posY, int step) {
+    // Steps can not be larger than the possible amount of steps.
+    if (step < sizeX * sizeY) {
+        steps[step].x = posX;
+        steps[step].y = posY;
+    } else {
+        printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds\n" ANSI_COLOR_RESET);
+    }
+}
+ 
+bool startSimpleBackTracking(int initialX, int initialY) {
+    return simpleBackTracking(initialX, initialY, 0);
+}
+
 // ?
 bool simpleBackTracking(int posX, int posY, int numb) {
     setFieldVal(posX, posY, true);
-    //printf("%d %d %d\n",posX, posY, numb);
     
-    if (numb == sizeX * sizeY) {
-                    
-        char buf[5];
-        sprintf(buf, "(%d,%d) ", posX+1, posY+1);
-        strcat(strings, buf);
+    if (numb == (sizeX * sizeY - 1)) {
         
+        addStepToSteps(posX, posY, numb);
         return 1;
     }
     
-    // Versucht alle möglichen Züge von aktuellem Feld auszuführen.
+    // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
     for (int i = 0; i <= 7; i++) {
         if (checkFieldValNumb(posX, posY, i, numb)) {
             
-            // Add coordinates to the steps string.
-            char buf[5];
-            sprintf(buf, "(%d,%d) ", posX+1, posY+1);
-            strcat(strings, buf);
+            addStepToSteps(posX, posY, numb);
             return 1;
         }
     }
@@ -135,44 +150,54 @@ bool simpleBackTracking(int posX, int posY, int numb) {
     return 0;
 }
 
+// Prompt for a digit between 0 and the upper Limit variable
+int promptForDigitsLimit(char prompt[], int upperLimit) {
+    int input;
+    while(true) {
+        printf("%s: ", prompt);
+        scanf("%d", &input);
+        if (input > upperLimit && upperLimit != -1) {
+            printf("Number must be smaller than %d.\n", upperLimit + 1);
+        } else if (input <= 0) {
+            printf("Number must be greater than 0.\n");
+        } else {
+            return input;
+        }
+    }
+}
+
+// Prompt for a digit larger than 0.
+int promptForDigits(char prompt[]) {
+    promptForDigitsLimit(prompt, -1);
+}
 
 int main() {
     
     int initialX, initialY;
     
-    sizeX = 7;
-    sizeY = 7;
-    initialX = 0;
-    initialY = 0;
+    sizeX = promptForDigits("Board Size (x)");
+    sizeY = promptForDigits("Board Size (y)");
+    initialX = promptForDigitsLimit("Initial X Position", sizeX);
+    initialY = promptForDigitsLimit("Initial Y Position", sizeY);
 
-    printf("Board Size (x): ");
-    scanf("%d", &sizeX);
-    
-    printf("Board Size (y): ");
-    scanf("%d", &sizeY);
-    
-    printf("Initial X Position: ");
-    scanf("%d", &initialX);
-    
-    printf("Initial Y Position: ");
-    scanf("%d", &initialY);
-
-
-
-
-    printf("Board Size: %dx%d, Initial X: %d Initial Y: %d\n", sizeX, sizeY, initialX, initialY);
+    // One less to go from 1-indexed to 0-indexed counting
+    initialX--;
+    initialY--;
     
     board = (int *)calloc(sizeX * sizeY, sizeof(int));
+    steps = (struct coord *)calloc(sizeX * sizeY, sizeof(struct coord));
+    
+    setFieldVal(initialX, initialY, true);
+    printBoard();
     
     *(board + initialY*sizeY + initialX) = 1;
-    //printBoard(board, sizeX, sizeY);
     
-    printf("%d\n", simpleBackTracking(initialX, initialY, 1));
+    startSimpleBackTracking(initialX, initialY);
     printBoard();
-    printf("%d", getFieldVal(7,7));
-    printf("\n%s\n", strings);
 
-
+    printf("%d - %d\n", steps[0].x, steps[0].y);
+    printf("%d - %d\n", steps[1].x, steps[1].y);
+    printf("%d - %d\n", steps[2].x, steps[2].y);
     // WOW
     return 0;
 }
