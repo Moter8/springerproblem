@@ -4,8 +4,6 @@
 #include <string.h>
 
 #define ANSI_COLOR_RED    "\x1b[31m"
-#define ANSI_COLOR_YELLOW "\x1b[33m"
-#define ANSI_COLOR_BLUE   "\x1b[34m"
 #define ANSI_COLOR_RESET  "\x1b[0m"
 
 #define PIECE_ODD "\x1b[31mx \x1b[0m"
@@ -16,17 +14,14 @@
 
 // TODO: 2 verschiedene Outputs anhand der Steps, refactor checkFieldValNumb to use coord structure
 // MY_TYPE a = { .flag = true, .value = 123, .stuff = 0.456 };
-// use coord everywhere instead of posX/posY? --> Nein
-// rework PrintBoard method :]
-
-int *board;
-int sizeX, sizeY;
 
 struct coord {
     int x;
     int y;
 };
 
+int *board;
+int sizeX, sizeY;
 struct coord *steps;
 
 bool getFieldVal(int posX, int posY);
@@ -53,7 +48,7 @@ void printBoard() {
         printf("\n");
     }
 }
-Rewrite printBoard(), 
+
 bool isBoardCompleted() {
 	for (int i = 0; i < sizeY; i++) {
 		for (int j = 0; j < sizeX; j++) {
@@ -77,6 +72,8 @@ bool getFieldVal(int posX, int posY) {
 
 void setFieldVal(int posX, int posY, bool val) {
     // board = 0x00000  + 1*sizeY (10) + 3 ~ 0x00013
+    
+    // http://i.imgur.com/KCztDMN.png
     *(board + posY*sizeY + posX) = val;
 }
 
