@@ -8,6 +8,13 @@
 #define ANSI_COLOR_BLUE   "\x1b[34m"
 #define ANSI_COLOR_RESET  "\x1b[0m"
 
+// Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
+
+// TODO: 2 verschiedene Outputs anhand der Steps, refactor checkFieldValNumb to use coord structure
+// MY_TYPE a = { .flag = true, .value = 123, .stuff = 0.456 };
+// use coord everywhere instead of posX/posY? --> Nein
+// rework PrintBoard method :]
+
 int *board;
 int sizeX, sizeY;
 
@@ -119,7 +126,7 @@ void addStepToSteps(int posX, int posY, int step) {
         steps[step].x = posX;
         steps[step].y = posY;
     } else {
-        printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds\n" ANSI_COLOR_RESET);
+        printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
     }
 }
  
@@ -188,16 +195,19 @@ int main() {
     steps = (struct coord *)calloc(sizeX * sizeY, sizeof(struct coord));
     
     setFieldVal(initialX, initialY, true);
-    printBoard();
     
+    printf("\nStartfeld:\n");
+    printBoard();
+
+    
+    // Setting the starting position to visited
     *(board + initialY*sizeY + initialX) = 1;
     
     startSimpleBackTracking(initialX, initialY);
+    
+    printf("\nErgebnisfeld:\n");
     printBoard();
 
-    printf("%d - %d\n", steps[0].x, steps[0].y);
-    printf("%d - %d\n", steps[1].x, steps[1].y);
-    printf("%d - %d\n", steps[2].x, steps[2].y);
     // WOW
     return 0;
 }
