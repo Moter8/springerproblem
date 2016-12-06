@@ -8,6 +8,10 @@
 #define ANSI_COLOR_BLUE   "\x1b[34m"
 #define ANSI_COLOR_RESET  "\x1b[0m"
 
+#define PIECE_ODD "\x1b[31mx \x1b[0m"
+#define PIECE_EVEN "\x1b[34mo \x1b[0m"
+#define PIECE_ACTIVE "\x1b[33m@ \x1b[0m"
+
 // Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
 
 // TODO: 2 verschiedene Outputs anhand der Steps, refactor checkFieldValNumb to use coord structure
@@ -32,36 +36,34 @@ bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb);
 bool simpleBackTracking(int posX, int posY, int numb);
 int promptForDigits(char prompt[]);
 int promptForDigitsLimit(char prompt[], int upperLimit);
+bool isBoardCompleted();
 
 void printBoard() {
-    
     for (int i = 0; i < sizeY; i++) {
-
         for (int j = 0; j < sizeX; j++) {
-            
-            if (*(board + i*sizeY + j) == 1) {
-                printf(ANSI_COLOR_YELLOW "@ " ANSI_COLOR_RESET);
+            if (getFieldVal(i, j)) {
+                printf(PIECE_ACTIVE);
+            } else if((i + j)%2) {
+                printf(PIECE_EVEN);
             } else {
-                if (i%2==0) {
-                    j++;
-                    if (j % 2 == 0) {
-                        printf(ANSI_COLOR_RED "x " ANSI_COLOR_RESET);
-                    } else {
-                        printf(ANSI_COLOR_BLUE "x " ANSI_COLOR_RESET);
-                    }
-                    j--;
-                } else {
-                    if (j % 2 == 0) {
-                        printf(ANSI_COLOR_RED "x " ANSI_COLOR_RESET);
-                    } else {
-                        printf(ANSI_COLOR_BLUE "x " ANSI_COLOR_RESET);
-                }
-            }   
+                printf(PIECE_ODD);
             }
+            //printf(getFieldVal(i, j) ? PIECE_ACTIVE : (i + j)%2 == 0 ? PIECE_EVEN : PIECE_ODD);
         }
         printf("\n");
     }
-    
+}
+Rewrite printBoard(), 
+bool isBoardCompleted() {
+	for (int i = 0; i < sizeY; i++) {
+		for (int j = 0; j < sizeX; j++) {
+		    // not sure if (j,i) or (i, j)
+			if (!getFieldVal(j, i)) {
+				return false;
+			}
+		}
+	}
+	return true;
 }
 
 // Gibt nur den Wert von einer bestimmten Position aus.
@@ -85,6 +87,56 @@ bool checkFieldVal(int posX, int posY, int numb) {
         return simpleBackTracking(posX, posY, numb + 1);
     } else {
         return false;
+    }
+}
+
+//ersetzt später checkFieldValNumb
+struct coord getFieldByNumber(int initialX, int initialY, int fieldNumber) {
+    struct coord result = {.x = initialX, .y = initialY};
+    switch (fieldNumber) {
+        case 0:
+            result.x += 2;
+            result.y += 1;
+            break;
+        case 1:
+            result.x += 2;
+            result.y -= 1;
+            break;
+        case 2:
+            result.x -= 2;
+            result.y += 1;
+            break;
+        case 3:
+            result.x -= 2;
+            result.y -= 1;
+            break;
+        case 4:
+            result.x += 1;
+            result.y += 2;
+            break;
+        case 5:
+            result.x += 1;
+            result.y -= 2;
+            break;
+        case 6:
+            result.x -= 1;
+            result.y += 2;
+            break;
+        case 7:
+            result.x -= 1;
+            result.y -= 2;
+            break;
+    }
+    return result;
+}
+
+void addStepToSteps(int posX, int posY, int step) {
+    // Steps can not be larger than the possible amount of steps.
+    if (step < sizeX * sizeY) {
+        steps[step].x = posX;
+        steps[step].y = posY;
+    } else {
+        printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
     }
 }
 
@@ -119,22 +171,12 @@ bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb) {
     printf("ERROR\n");
     return 0;
 }
-
-void addStepToSteps(int posX, int posY, int step) {
-    // Steps can not be larger than the possible amount of steps.
-    if (step < sizeX * sizeY) {
-        steps[step].x = posX;
-        steps[step].y = posY;
-    } else {
-        printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
-    }
-}
  
 bool startSimpleBackTracking(int initialX, int initialY) {
     return simpleBackTracking(initialX, initialY, 0);
 }
 
-// ?
+// Recursive algorithm for backTracking
 bool simpleBackTracking(int posX, int posY, int numb) {
     setFieldVal(posX, posY, true);
     
@@ -157,25 +199,40 @@ bool simpleBackTracking(int posX, int posY, int numb) {
     return 0;
 }
 
+//Flushes the input stream
+void flushInputStream() {
+    
+}
+
+// http://stackoverflow.com/a/27281028/3991578
+void flushStdin(void) {
+  int ch;
+  while(((ch = getchar()) !='\n') && (ch != EOF));
+}
+
 // Prompt for a digit between 0 and the upper Limit variable
 int promptForDigitsLimit(char prompt[], int upperLimit) {
-    int input;
     while(true) {
+        int input;
         printf("%s: ", prompt);
-        scanf("%d", &input);
-        if (input > upperLimit && upperLimit != -1) {
+
+        if (scanf("%d", &input) <= 0) {
+            flushStdin();
+            printf("Input must be a number.\n");
+        } else if (input > upperLimit && upperLimit != -1) {
             printf("Number must be smaller than %d.\n", upperLimit + 1);
         } else if (input <= 0) {
             printf("Number must be greater than 0.\n");
         } else {
             return input;
         }
+        flushInputStream();
     }
 }
 
 // Prompt for a digit larger than 0.
 int promptForDigits(char prompt[]) {
-    promptForDigitsLimit(prompt, -1);
+    return promptForDigitsLimit(prompt, -1);
 }
 
 int main() {
@@ -191,6 +248,7 @@ int main() {
     initialX--;
     initialY--;
     
+    // Allocate and 0-initialize board and steps arrays
     board = (int *)calloc(sizeX * sizeY, sizeof(int));
     steps = (struct coord *)calloc(sizeX * sizeY, sizeof(struct coord));
     
@@ -199,15 +257,21 @@ int main() {
     printf("\nStartfeld:\n");
     printBoard();
 
-    
     // Setting the starting position to visited
-    *(board + initialY*sizeY + initialX) = 1;
+    *(board + initialY * sizeY + initialX) = 1;
     
+    // Starts main algorithm
     startSimpleBackTracking(initialX, initialY);
+    
+    
+    if(isBoardCompleted()) {
+        printf("A solution has been found!\n");
+    } else {
+        printf("No solution could be found!\n");
+    }
     
     printf("\nErgebnisfeld:\n");
     printBoard();
-
-    // WOW
+    
     return 0;
 }
