@@ -64,7 +64,7 @@ bool isBoardCompleted() {
 // Gibt nur den Wert von einer bestimmten Position aus.
 bool getFieldVal(int posX, int posY) {
     if (posX < sizeX && posY < sizeY && posX >= 0 && posY >= 0) {
-        return *(board + posY*sizeY + posX);
+        return *(board + posY*sizeX + posX);
     } else {
         return true;   
     }
@@ -74,7 +74,7 @@ void setFieldVal(int posX, int posY, bool val) {
     // board = 0x00000  + 1*sizeY (10) + 3 ~ 0x00013
     
     // http://i.imgur.com/KCztDMN.png
-    *(board + posY*sizeY + posX) = val;
+    *(board + posY*sizeX + posX) = val;
 }
 
 // If Destionation X and Y aren't visited, execute simpleBackTracking to possible move to that location.
@@ -136,38 +136,6 @@ void addStepToSteps(int posX, int posY, int step) {
         printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
     }
 }
-
-// Possible moves will be checked depending on the fieldNumber.
-bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb) {
-    switch (fieldNumber) {
-        case 0:
-            return checkFieldVal(posX + 2, posY + 1, numb);
-            break;
-        case 1:
-            return checkFieldVal(posX + 2, posY - 1, numb);
-            break;
-        case 2:
-            return checkFieldVal(posX - 2, posY + 1, numb);
-            break;
-        case 3:
-            return checkFieldVal(posX - 2, posY - 1, numb);
-            break;
-        case 4:
-            return checkFieldVal(posX + 1, posY + 2, numb);
-            break;
-        case 5:
-            return checkFieldVal(posX + 1, posY - 2, numb);
-            break;
-        case 6:
-            return checkFieldVal(posX - 1, posY + 2, numb);
-            break;
-        case 7:
-            return checkFieldVal(posX - 1, posY - 2, numb);
-            break;
-    }
-    printf("ERROR\n");
-    return 0;
-}
  
 bool startSimpleBackTracking(int initialX, int initialY) {
     return simpleBackTracking(initialX, initialY, 0);
@@ -185,7 +153,9 @@ bool simpleBackTracking(int posX, int posY, int numb) {
     
     // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
     for (int i = 0; i <= 7; i++) {
-        if (checkFieldValNumb(posX, posY, i, numb)) {
+        struct coord temp = getFieldByNumber(posX, posY, i);
+        
+        if (checkFieldVal(temp.x, temp.y, numb)) {
             
             addStepToSteps(posX, posY, numb);
             return 1;
@@ -196,13 +166,8 @@ bool simpleBackTracking(int posX, int posY, int numb) {
     return 0;
 }
 
-//Flushes the input stream
-void flushInputStream() {
-    
-}
-
 // http://stackoverflow.com/a/27281028/3991578
-void flushStdin(void) {
+void flushStdIn(void) {
   int ch;
   while(((ch = getchar()) !='\n') && (ch != EOF));
 }
@@ -214,7 +179,7 @@ int promptForDigitsLimit(char prompt[], int upperLimit) {
         printf("%s: ", prompt);
 
         if (scanf("%d", &input) <= 0) {
-            flushStdin();
+            flushStdIn();
             printf("Input must be a number.\n");
         } else if (input > upperLimit && upperLimit != -1) {
             printf("Number must be smaller than %d.\n", upperLimit + 1);
@@ -223,7 +188,6 @@ int promptForDigitsLimit(char prompt[], int upperLimit) {
         } else {
             return input;
         }
-        flushInputStream();
     }
 }
 
@@ -255,7 +219,7 @@ int main() {
     printBoard();
 
     // Setting the starting position to visited
-    *(board + initialY * sizeY + initialX) = 1;
+    *(board + initialY * sizeX + initialX) = 1;
     
     // Starts main algorithm
     startSimpleBackTracking(initialX, initialY);
