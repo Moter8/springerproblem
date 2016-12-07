@@ -20,6 +20,11 @@ struct coord {
     int y;
 };
 
+struct extCoord {
+    struct coord position;
+    int possibleSteps;
+};
+
 int *board;
 int sizeX, sizeY;
 struct coord *steps;
@@ -32,6 +37,9 @@ bool simpleBackTracking(int posX, int posY, int numb);
 int promptForDigits(char prompt[]);
 int promptForDigitsLimit(char prompt[], int upperLimit);
 bool isBoardCompleted();
+bool startWarnsdorfBackTracking(int initialX, int initialY);
+bool warnsdorfBackTracking(int posX, int posY, int numb);
+int countPossibleSteps(int initialX, int initialY);
 
 void printBoard() {
     for (int y = 0; y < sizeY; y++) {
@@ -55,6 +63,7 @@ void printSteps() {
     for(int i = 0; i < stepsAmount; i++) {
         printf("(%d,%d) ", steps[i].x + 1, steps[i].y + 1);
     }
+    
     printf("\n");
 }
 
@@ -73,16 +82,6 @@ void setFieldVal(int posX, int posY, bool val) {
     
     // http://i.imgur.com/KCztDMN.png
     *(board + posY*sizeX + posX) = val;
-}
-
-// If Destionation X and Y aren't visited, execute simpleBackTracking to possible move to that location.
-// Numb is used to keep track of ?
-bool checkFieldVal(int posX, int posY, int numb) {
-    if (!getFieldVal(posX, posY)) {
-        return simpleBackTracking(posX, posY, numb + 1);
-    } else {
-        return false;
-    }
 }
 
 //ersetzt später checkFieldValNumb
@@ -134,6 +133,65 @@ void addStepToSteps(int posX, int posY, int step) {
         printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
     }
 }
+bool startWarnsdorfBackTracking(int initialX, int initialY) {
+    return warnsdorfBackTracking(initialX, initialY, 0);
+}
+
+// Recursive algorithm for backTracking
+bool warnsdorfBackTracking(int posX, int posY, int numb) {
+    setFieldVal(posX, posY, true);
+    
+    if (numb == (sizeX * sizeY - 1)) {
+        
+        addStepToSteps(posX, posY, numb);
+        return 1;
+    }
+    
+    struct extCoord followingSteps[8] =
+    {
+        {.possibleSteps = -1}, {.possibleSteps = -1},
+        {.possibleSteps = -1}, {.possibleSteps = -1},
+        {.possibleSteps = -1}, {.possibleSteps = -1},
+        {.possibleSteps = -1}, {.possibleSteps = -1}
+    };
+    
+    // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
+    for (int i = 0; i < 8; i++) {
+        struct coord buffer = getFieldByNumber(posX, posY, i);
+        
+        if (!getFieldVal(buffer.x, buffer.y)) {
+            followingSteps[i].possibleSteps = countPossibleSteps(buffer.x, buffer.y);
+            followingSteps[i].position = buffer;
+        }
+    }
+    
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (followingSteps[j].possibleSteps == i) {
+                if (warnsdorfBackTracking(followingSteps[j].position.x, followingSteps[j].position.y, numb + 1)) {
+                    addStepToSteps(posX, posY, numb);
+                    return 1;
+                }
+            }
+        }
+    }
+
+    setFieldVal(posX, posY, false);
+    return 0;
+}
+
+int countPossibleSteps(int initialX, int initialY) {
+    int result = 0;
+    struct coord buffer;
+    for (int i = 0; i < 8; i++) {
+        buffer = getFieldByNumber(initialX, initialY, i);
+        if(!getFieldVal(buffer.x, buffer.y)) {
+            result++;
+        }
+    }
+    return result;
+}
+ 
  
 bool startSimpleBackTracking(int initialX, int initialY) {
     return simpleBackTracking(initialX, initialY, 0);
@@ -152,9 +210,7 @@ bool simpleBackTracking(int posX, int posY, int numb) {
     // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
     for (int i = 0; i <= 7; i++) {
         struct coord temp = getFieldByNumber(posX, posY, i);
-        
-        if (checkFieldVal(temp.x, temp.y, numb)) {
-            
+        if (!getFieldVal(temp.x, temp.y) && simpleBackTracking(temp.x, temp.y, numb + 1)) {
             addStepToSteps(posX, posY, numb);
             return 1;
         }
@@ -220,7 +276,7 @@ int main() {
     *(board + initialY * sizeX + initialX) = 1;
     
     // Starts main algorithm
-    if(startSimpleBackTracking(initialX, initialY)) {
+    if(startWarnsdorfBackTracking(initialX, initialY)) {
         printf("A solution has been found!\n");
     } else {
         printf("No solution could be found!\n");
