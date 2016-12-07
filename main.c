@@ -3,12 +3,25 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define ANSI_COLOR_RED    "\x1b[31m"
-#define ANSI_COLOR_RESET  "\x1b[0m"
+#ifdef _WIN32
+    #define ANSI_COLOR_GREEN    ""
+    #define ANSI_COLOR_RED    ""
+    #define ANSI_COLOR_RESET  ""
+    
+    #define PIECE_ODD "x "
+    #define PIECE_EVEN "o "
+    #define PIECE_ACTIVE "@ "
+#else
+    #define ANSI_COLOR_GREEN    "\x1b[32m"
+    #define ANSI_COLOR_RED    "\x1b[31m"
+    #define ANSI_COLOR_RESET  "\x1b[0m"
+    
+    #define PIECE_ODD "\x1b[31mx \x1b[0m"
+    #define PIECE_EVEN "\x1b[34mo \x1b[0m"
+    #define PIECE_ACTIVE "\x1b[33m@ \x1b[0m"
+#endif
 
-#define PIECE_ODD "\x1b[31mx \x1b[0m"
-#define PIECE_EVEN "\x1b[34mo \x1b[0m"
-#define PIECE_ACTIVE "\x1b[33m@ \x1b[0m"
+
 
 // Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
 
@@ -277,7 +290,7 @@ int main() {
     
     // Starts main algorithm
     if(startWarnsdorfBackTracking(initialX, initialY)) {
-        printf("A solution has been found!\n");
+        printf( ANSI_COLOR_GREEN "\nA solution has been found!\n" ANSI_COLOR_RESET);
     } else {
         printf("No solution could be found!\n");
     }
