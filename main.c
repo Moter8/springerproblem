@@ -34,32 +34,30 @@ int promptForDigitsLimit(char prompt[], int upperLimit);
 bool isBoardCompleted();
 
 void printBoard() {
-    for (int i = 0; i < sizeY; i++) {
-        for (int j = 0; j < sizeX; j++) {
-            if (getFieldVal(i, j)) {
+    for (int y = 0; y < sizeY; y++) {
+        for (int x = 0; x < sizeX; x++) {
+            if (getFieldVal(x, y)) {
                 printf(PIECE_ACTIVE);
-            } else if((i + j)%2) {
+            } else if((y + x)%2) {
                 printf(PIECE_EVEN);
             } else {
                 printf(PIECE_ODD);
             }
-            //printf(getFieldVal(i, j) ? PIECE_ACTIVE : (i + j)%2 == 0 ? PIECE_EVEN : PIECE_ODD);
+            //printf(getFieldVal(y, x) ? PIECE_ACTIVE : (y + x)%2 == 0 ? PIECE_EVEN : PIECE_ODD);
         }
-        printf("\n");
+        printf("\n"); 
     }
 }
 
-bool isBoardCompleted() {
-	for (int i = 0; i < sizeY; i++) {
-		for (int j = 0; j < sizeX; j++) {
-		    // not sure if (j,i) or (i, j)
-			if (!getFieldVal(j, i)) {
-				return false;
-			}
-		}
-	}
-	return true;
+void printSteps() {
+    int stepsAmount = sizeX*sizeY;
+    
+    for(int i = 0; i < stepsAmount; i++) {
+        printf("(%d,%d) ", steps[i].x + 1, steps[i].y + 1);
+    }
+    printf("\n");
 }
+
 
 // Gibt nur den Wert von einer bestimmten Position aus.
 bool getFieldVal(int posX, int posY) {
@@ -71,7 +69,7 @@ bool getFieldVal(int posX, int posY) {
 }
 
 void setFieldVal(int posX, int posY, bool val) {
-    // board = 0x00000  + 1*sizeY (10) + 3 ~ 0x00013
+    // board = 0x00000  + 1*sizeX (10) + 3 ~ 0x00013
     
     // http://i.imgur.com/KCztDMN.png
     *(board + posY*sizeX + posX) = val;
@@ -182,7 +180,7 @@ int promptForDigitsLimit(char prompt[], int upperLimit) {
             flushStdIn();
             printf("Input must be a number.\n");
         } else if (input > upperLimit && upperLimit != -1) {
-            printf("Number must be smaller than %d.\n", upperLimit + 1);
+            printf("Number can't be greater than %d.\n", upperLimit);
         } else if (input <= 0) {
             printf("Number must be greater than 0.\n");
         } else {
@@ -222,17 +220,17 @@ int main() {
     *(board + initialY * sizeX + initialX) = 1;
     
     // Starts main algorithm
-    startSimpleBackTracking(initialX, initialY);
-    
-    
-    if(isBoardCompleted()) {
+    if(startSimpleBackTracking(initialX, initialY)) {
         printf("A solution has been found!\n");
     } else {
         printf("No solution could be found!\n");
     }
     
+    
     printf("\nErgebnisfeld:\n");
     printBoard();
+    
+    printSteps();
     
     return 0;
 }
