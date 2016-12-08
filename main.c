@@ -7,7 +7,7 @@
     #define ANSI_COLOR_GREEN    ""
     #define ANSI_COLOR_RED    ""
     #define ANSI_COLOR_RESET  ""
-    
+
     #define PIECE_ODD "x "
     #define PIECE_EVEN "o "
     #define PIECE_ACTIVE "@ "
@@ -15,7 +15,7 @@
     #define ANSI_COLOR_GREEN    "\x1b[32m"
     #define ANSI_COLOR_RED    "\x1b[31m"
     #define ANSI_COLOR_RESET  "\x1b[0m"
-    
+
     #define PIECE_ODD "\x1b[31mx \x1b[0m"
     #define PIECE_EVEN "\x1b[34mo \x1b[0m"
     #define PIECE_ACTIVE "\x1b[33m@ \x1b[0m"
@@ -51,7 +51,7 @@ int promptForDigits(char prompt[]);
 int promptForDigitsLimit(char prompt[], int upperLimit);
 bool isBoardCompleted();
 bool startWarnsdorfBackTracking(int initialX, int initialY);
-bool warnsdorfBackTracking(int posX, int posY, int numb);
+bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb);
 int countPossibleSteps(int initialX, int initialY);
 
 void printBoard() {
@@ -66,17 +66,17 @@ void printBoard() {
             }
             //printf(getFieldVal(x, y) ? PIECE_ACTIVE : (y + x)%2 == 0 ? PIECE_EVEN : PIECE_ODD);
         }
-        printf("\n"); 
+        printf("\n");
     }
 }
 
 void printSteps() {
     int stepsAmount = sizeX*sizeY;
-    
+
     for(int i = 0; i < stepsAmount; i++) {
         printf("(%d,%d) ", steps[i].x + 1, steps[i].y + 1);
     }
-    
+
     printf("\n");
 }
 
@@ -86,7 +86,7 @@ bool getFieldVal(int posX, int posY) {
     if (posX < sizeX && posY < sizeY && posX >= 0 && posY >= 0) {
         return *(board + posY*sizeX + posX);
     } else {
-        return true;   
+        return true;
     }
 }
 
@@ -135,7 +135,7 @@ struct coord getFieldByNumber(int initialX, int initialY, int fieldNumber) {
             result.y += 1;
             break;
             */
-            
+
             //Alte Reihenfolge schneller in der Mitte, langsamer am Rand
         case 0:
             result.x += 2;
@@ -182,25 +182,57 @@ void addStepToSteps(int posX, int posY, int step) {
         printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
     }
 }
+
+/*
+ * Returns if there is a possible solution for the knights tour
+ * on the current field size.
+ * If found, the solution is saved in steps.
+ */
 bool startWarnsdorfBackTracking(int initialX, int initialY) {
-    effectivity = 0;
-    return warnsdorfBackTracking(initialX, initialY, 0);
+	printf("Mode: normal.\n");
+    return warnsdorfBackTracking(initialX, initialY, -1, -1 ,0);
+}
+
+/*
+ * Returns if there is a possible solution for a closed knights tour
+ * on the current field size.
+ * If found, the solution is saved in steps.
+ */
+bool startWarnsdorfBackTrackingClosed(int initialX, int initialY) {
+	printf("Mode: closed.\n");
+    return warnsdorfBackTracking(initialX, initialY, initialX, initialY ,0);
+}
+
+/*
+ * Returns if there is a possible solution for the knights tour,
+ * on the current field size with a given final destination.
+ * If found, the solution is saved in steps.
+ */
+bool startWarnsdorfBackTrackingDest(int initialX, int initialY, int finalX, int finalY) {
+	printf("Mode: given Destination.\n");
+    return warnsdorfBackTracking(initialX, initialY, finalX, finalY ,0);
 }
 
 // Recursive algorithm for backTracking
-bool warnsdorfBackTracking(int posX, int posY, int numb) {
+bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb) {
     setFieldVal(posX, posY, true);
-    
+
     if (monitoring) {
         effectivity++;
     }
-    
+
     if (numb == (sizeX * sizeY - 1)) {
-        
-        addStepToSteps(posX, posY, numb);
-        return 1;
+    	for (int i = 0; i < 8; i++) {
+    		struct coord buffer = getFieldByNumber(posX, posY, i);
+    		if ((buffer.x == finalX && buffer.y == finalY) || finalX == -1 || finalY == -1) {
+    	        addStepToSteps(posX, posY, numb);
+    	        return 1;
+    		}
+    	}
+    	setFieldVal(posX, posY, false);
+    	return 0;
     }
-    
+
     struct extCoord followingSteps[8] =
     {
         {.possibleSteps = -1}, {.possibleSteps = -1},
@@ -208,21 +240,21 @@ bool warnsdorfBackTracking(int posX, int posY, int numb) {
         {.possibleSteps = -1}, {.possibleSteps = -1},
         {.possibleSteps = -1}, {.possibleSteps = -1}
     };
-    
+
     // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
     for (int i = 0; i < 8; i++) {
         struct coord buffer = getFieldByNumber(posX, posY, i);
-        
+
         if (!getFieldVal(buffer.x, buffer.y)) {
             followingSteps[i].possibleSteps = countPossibleSteps(buffer.x, buffer.y);
             followingSteps[i].position = buffer;
         }
     }
-    
+
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             if (followingSteps[j].possibleSteps == i) {
-                if (warnsdorfBackTracking(followingSteps[j].position.x, followingSteps[j].position.y, numb + 1)) {
+                if (warnsdorfBackTracking(followingSteps[j].position.x, followingSteps[j].position.y, finalX, finalY, numb + 1)) {
                     addStepToSteps(posX, posY, numb);
                     return 1;
                 }
@@ -245,8 +277,8 @@ int countPossibleSteps(int initialX, int initialY) {
     }
     return result;
 }
- 
- 
+
+
 bool startSimpleBackTracking(int initialX, int initialY) {
     return simpleBackTracking(initialX, initialY, 0);
 }
@@ -254,13 +286,13 @@ bool startSimpleBackTracking(int initialX, int initialY) {
 // Recursive algorithm for backTracking
 bool simpleBackTracking(int posX, int posY, int numb) {
     setFieldVal(posX, posY, true);
-    
+
     if (numb == (sizeX * sizeY - 1)) {
-        
+
         addStepToSteps(posX, posY, numb);
         return 1;
     }
-    
+
     // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
     for (int i = 0; i <= 7; i++) {
         struct coord temp = getFieldByNumber(posX, posY, i);
@@ -269,7 +301,7 @@ bool simpleBackTracking(int posX, int posY, int numb) {
             return 1;
         }
     }
-    
+
     setFieldVal(posX, posY, false);
     return 0;
 }
@@ -307,12 +339,12 @@ int promptForDigits(char prompt[]) {
 struct coord setupInput() {
     // One less to go from 1-indexed to 0-indexed counting
     struct coord initial = {.x = -1, .y = -1};
-    
+
     sizeX = promptForDigits("Board Size (x)");
     sizeY = promptForDigits("Board Size (y)");
     initial.x += promptForDigitsLimit("Initial X Position", sizeX);
     initial.y += promptForDigitsLimit("Initial Y Position", sizeY);
-    
+
     return initial;
 }
 
@@ -324,12 +356,15 @@ void resetStepsABoard() {
 
 double calcEffectivity() {
     monitoring = true;
+
     double result = 0;
     for (int x = 0; x < sizeX; x++) {
         for (int y = 0; y < sizeY; y++) {
             effectivity = 0;
-            warnsdorfBackTracking(x, y, 0);
+            //warnsdorfBackTracking(x, y, 0);
             result += effectivity;
+            printf("x:%d y:%d Effektiviät: %d \n", x,y,effectivity);
+            resetStepsABoard();
         }
     }
     result = result / (sizeX * sizeY);;
@@ -339,27 +374,29 @@ double calcEffectivity() {
 
 int main() {
     struct coord initial = setupInput();
-    
+
     resetStepsABoard();
-    
+
     setFieldVal(initial.x, initial.y, true);
-    
+
     printf("\nStartfeld:\n");
     printBoard();
-    
+
     // Starts main algorithm
     if(startWarnsdorfBackTracking(initial.x, initial.y)) {
         printf( ANSI_COLOR_GREEN "\nA solution has been found!\n" ANSI_COLOR_RESET);
     } else {
         printf("No solution could be found!\n");
     }
-    
-    
+
+
     printf("\nErgebnisfeld:\n");
     printBoard();
     printSteps();
-    
-    //printf("Effektivität: %.2f \n", calcEffectivity(sizeY, sizeX));
-    
+
+    //printf("Effektivität: %.2f \n", calcEffectivity());
+    printf("Press enter to exit the program.");
+    getchar();
+
     return 0;
 }
