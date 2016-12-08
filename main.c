@@ -21,8 +21,6 @@
     #define PIECE_ACTIVE "\x1b[33m@ \x1b[0m"
 #endif
 
-
-
 // Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
 
 // TODO: 2 verschiedene Outputs anhand der Steps, refactor checkFieldValNumb to use coord structure
@@ -38,9 +36,11 @@ struct extCoord {
     int possibleSteps;
 };
 
+int effectivity = 0;
 int *board;
 int sizeX, sizeY;
 struct coord *steps;
+bool monitoring = false;
 
 bool getFieldVal(int posX, int posY);
 void setFieldVal(int posX, int posY, bool val);
@@ -64,7 +64,7 @@ void printBoard() {
             } else {
                 printf(PIECE_ODD);
             }
-            //printf(getFieldVal(y, x) ? PIECE_ACTIVE : (y + x)%2 == 0 ? PIECE_EVEN : PIECE_ODD);
+            //printf(getFieldVal(x, y) ? PIECE_ACTIVE : (y + x)%2 == 0 ? PIECE_EVEN : PIECE_ODD);
         }
         printf("\n"); 
     }
@@ -91,8 +91,6 @@ bool getFieldVal(int posX, int posY) {
 }
 
 void setFieldVal(int posX, int posY, bool val) {
-    // board = 0x00000  + 1*sizeX (10) + 3 ~ 0x00013
-    
     // http://i.imgur.com/KCztDMN.png
     *(board + posY*sizeX + posX) = val;
 }
@@ -101,6 +99,44 @@ void setFieldVal(int posX, int posY, bool val) {
 struct coord getFieldByNumber(int initialX, int initialY, int fieldNumber) {
     struct coord result = {.x = initialX, .y = initialY};
     switch (fieldNumber) {
+        //Neue Reihenfolge schneller am Rand, langsamer in der Mitte
+        //durchschnittlich kein Unterschied
+        /*
+        case 0:
+            result.x -= 1;
+            result.y += 2;
+            break;
+        case 1:
+            result.x += 1;
+            result.y -= 2;
+            break;
+        case 2:
+            result.x += 2;
+            result.y += 1;
+            break;
+        case 3:
+            result.x -= 2;
+            result.y -= 1;
+            break;
+        case 4:
+            result.x += 1;
+            result.y += 2;
+            break;
+        case 5:
+            result.x -= 1;
+            result.y -= 2;
+            break;
+        case 6:
+            result.x += 2;
+            result.y -= 1;
+            break;
+        case 7:
+            result.x -= 2;
+            result.y += 1;
+            break;
+            */
+            
+            //Alte Reihenfolge schneller in der Mitte, langsamer am Rand
         case 0:
             result.x += 2;
             result.y += 1;
@@ -147,12 +183,17 @@ void addStepToSteps(int posX, int posY, int step) {
     }
 }
 bool startWarnsdorfBackTracking(int initialX, int initialY) {
+    effectivity = 0;
     return warnsdorfBackTracking(initialX, initialY, 0);
 }
 
 // Recursive algorithm for backTracking
 bool warnsdorfBackTracking(int posX, int posY, int numb) {
     setFieldVal(posX, posY, true);
+    
+    if (monitoring) {
+        effectivity++;
+    }
     
     if (numb == (sizeX * sizeY - 1)) {
         
@@ -263,33 +304,51 @@ int promptForDigits(char prompt[]) {
     return promptForDigitsLimit(prompt, -1);
 }
 
-int main() {
-    
-    int initialX, initialY;
+struct coord setupInput() {
+    // One less to go from 1-indexed to 0-indexed counting
+    struct coord initial = {.x = -1, .y = -1};
     
     sizeX = promptForDigits("Board Size (x)");
     sizeY = promptForDigits("Board Size (y)");
-    initialX = promptForDigitsLimit("Initial X Position", sizeX);
-    initialY = promptForDigitsLimit("Initial Y Position", sizeY);
-
-    // One less to go from 1-indexed to 0-indexed counting
-    initialX--;
-    initialY--;
+    initial.x += promptForDigitsLimit("Initial X Position", sizeX);
+    initial.y += promptForDigitsLimit("Initial Y Position", sizeY);
     
-    // Allocate and 0-initialize board and steps arrays
+    return initial;
+}
+
+// Allocate and 0-initialize board and steps arrays
+void resetStepsABoard() {
     board = (int *)calloc(sizeX * sizeY, sizeof(int));
     steps = (struct coord *)calloc(sizeX * sizeY, sizeof(struct coord));
+}
+
+double calcEffectivity() {
+    monitoring = true;
+    double result = 0;
+    for (int x = 0; x < sizeX; x++) {
+        for (int y = 0; y < sizeY; y++) {
+            effectivity = 0;
+            warnsdorfBackTracking(x, y, 0);
+            result += effectivity;
+        }
+    }
+    result = result / (sizeX * sizeY);;
+    monitoring = false;
+    return result;
+}
+
+int main() {
+    struct coord initial = setupInput();
     
-    setFieldVal(initialX, initialY, true);
+    resetStepsABoard();
+    
+    setFieldVal(initial.x, initial.y, true);
     
     printf("\nStartfeld:\n");
     printBoard();
-
-    // Setting the starting position to visited
-    *(board + initialY * sizeX + initialX) = 1;
     
     // Starts main algorithm
-    if(startWarnsdorfBackTracking(initialX, initialY)) {
+    if(startWarnsdorfBackTracking(initial.x, initial.y)) {
         printf( ANSI_COLOR_GREEN "\nA solution has been found!\n" ANSI_COLOR_RESET);
     } else {
         printf("No solution could be found!\n");
@@ -298,8 +357,9 @@ int main() {
     
     printf("\nErgebnisfeld:\n");
     printBoard();
-    
     printSteps();
+    
+    //printf("Effektivität: %.2f \n", calcEffectivity(sizeY, sizeX));
     
     return 0;
 }
