@@ -1,6 +1,7 @@
 # Springerproblem
 
-Noch weiß ich nicht was hier hin soll, aber eine README zu haben ist immer toll.
+## Compilation copypasta
 
-Wichtig: MinGW / GCC installieren, C:\MinGW\bin in die PATH einfügen.
-Im Visual Studio Code drückt man Ctrl+Shift+P um den Build-Task auszuführen. Eine Datei `springerproblem.exe` wird erstellt. Diese kann man im CMD öffnen.
+Compile with optimization, using the C99 standard and displaying all warnings:
+
+`gcc main.c -o out --std=c99 -O3 -Wall -Werror`
