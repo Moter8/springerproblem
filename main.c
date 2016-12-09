@@ -4,27 +4,27 @@
 #include <string.h>
 
 #ifdef _WIN32
-    #define ANSI_COLOR_GREEN    ""
+    #define ANSI_COLOR_GREEN  ""
     #define ANSI_COLOR_RED    ""
     #define ANSI_COLOR_RESET  ""
 
-    #define PIECE_ODD "x "
-    #define PIECE_EVEN "o "
+    #define PIECE_ODD    "x "
+    #define PIECE_EVEN   "o "
     #define PIECE_ACTIVE "@ "
 #else
-    #define ANSI_COLOR_GREEN    "\x1b[32m"
+    #define ANSI_COLOR_GREEN  "\x1b[32m"
     #define ANSI_COLOR_RED    "\x1b[31m"
     #define ANSI_COLOR_RESET  "\x1b[0m"
 
-    #define PIECE_ODD "\x1b[31mx \x1b[0m"
-    #define PIECE_EVEN "\x1b[34mo \x1b[0m"
-    #define PIECE_ACTIVE "\x1b[33m@ \x1b[0m"
+    #define PIECE_ODD     "\x1b[31mx \x1b[0m"
+    #define PIECE_EVEN    "\x1b[34mo \x1b[0m"
+    #define PIECE_ACTIVE  "\x1b[33m@ \x1b[0m"
 #endif
 
 // Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
 
-// TODO: 2 verschiedene Outputs anhand der Steps, refactor checkFieldValNumb to use coord structure
-// MY_TYPE a = { .flag = true, .value = 123, .stuff = 0.456 };
+// TODO: Code a menu so the user can choose which Algorithm he wants to run.
+// Alternative: offer this as command-line option.
 
 struct coord {
     int x;
