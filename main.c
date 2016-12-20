@@ -213,7 +213,9 @@ bool startWarnsdorfBackTrackingDest(int initialX, int initialY, int finalX, int 
     return warnsdorfBackTracking(initialX, initialY, finalX, finalY ,0);
 }
 
-// Recursive algorithm for backTracking
+/*
+ * Recursive algorithm for the Knights path
+ */
 bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb) {
     setFieldVal(posX, posY, true);
 
@@ -336,20 +338,24 @@ int promptForDigits(char prompt[]) {
     return promptForDigitsLimit(prompt, -1);
 }
 
-struct coord setupInput() {
-    // One less to go from 1-indexed to 0-indexed counting
-    struct coord initial = {.x = -1, .y = -1};
-
+void setupBoardSize() {
     sizeX = promptForDigits("Board Size (x)");
     sizeY = promptForDigits("Board Size (y)");
-    initial.x += promptForDigitsLimit("Initial X Position", sizeX);
-    initial.y += promptForDigitsLimit("Initial Y Position", sizeY);
+}
+
+struct coord setupInitialPosition() {
+    
+    struct coord initial = {
+        // Subtract 1 from the given value to go from 1-indexed to 0-indexed.
+        .x = promptForDigitsLimit("Initial X Position", sizeX) - 1,
+        .y = promptForDigitsLimit("Initial Y Position", sizeY) - 1
+    };
 
     return initial;
 }
 
 // Allocate and 0-initialize board and steps arrays
-void resetStepsABoard() {
+void resetBoardAndSteps() {
     board = (int *)calloc(sizeX * sizeY, sizeof(int));
     steps = (struct coord *)calloc(sizeX * sizeY, sizeof(struct coord));
 }
@@ -364,7 +370,7 @@ double calcEffectivity() {
             //warnsdorfBackTracking(x, y, 0);
             result += effectivity;
             printf("x:%d y:%d Effektiviät: %d \n", x,y,effectivity);
-            resetStepsABoard();
+            resetBoardAndSteps();
         }
     }
     result = result / (sizeX * sizeY);;
@@ -373,30 +379,53 @@ double calcEffectivity() {
 }
 
 int main() {
-    struct coord initial = setupInput();
+    
+    printf("1: Startfeld wird vom Programm gewählt.\n");
+    printf("2: Startfeld wird vom Anwender frei gewählt.\n");
+    printf("3: Startfeld wird vom Anwender frei gewählt, der Springer geht einen geschlossenen Pfad.\n");
+    
+    int option = promptForDigitsLimit("Wählen Sie bitte zwischen den Optionen 1, 2 und 3 aus", 3);
+    bool result = false;
+    struct coord initial;
+    
+    setupBoardSize();
+    resetBoardAndSteps();
+    
+    switch (option) {
 
-    resetStepsABoard();
-
-    setFieldVal(initial.x, initial.y, true);
-
+        case 1: { // open with initial values pre-defined
+            result = startWarnsdorfBackTracking(0, 0);
+            break;
+        }
+        case 2: { // open
+            initial = setupInitialPosition();
+            result = startWarnsdorfBackTracking(initial.x, initial.y);
+            break;
+        }
+        case 3: { // closed
+            initial = setupInitialPosition();
+            result = startWarnsdorfBackTrackingClosed(initial.x, initial.y);
+            break;
+        }
+    }
+/*
+    setFieldVal(initial.x, initial.y, true); // just for the output, doesn't alter algorithm
     printf("\nStartfeld:\n");
     printBoard();
-
-    // Starts main algorithm
-    if(startWarnsdorfBackTracking(initial.x, initial.y)) {
+*/
+    if(result) {
         printf( ANSI_COLOR_GREEN "\nA solution has been found!\n" ANSI_COLOR_RESET);
+        printf("\nErgebnisfeld:\n");
+        printBoard();
+        printSteps();
     } else {
-        printf("No solution could be found!\n");
+        printf("No solution could be found, please try other values!\n");
     }
-
-
-    printf("\nErgebnisfeld:\n");
-    printBoard();
-    printSteps();
 
     //printf("Effektivität: %.2f \n", calcEffectivity());
     printf("Press enter to exit the program.");
     getchar();
 
+    getchar();
     return 0;
 }
