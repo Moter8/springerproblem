@@ -39,7 +39,7 @@ struct extCoord {
 int effectivity = 0;
 int *board;
 int sizeX, sizeY;
-struct coord *steps;
+int *steps;
 bool monitoring = false;
 
 bool getFieldVal(int posX, int posY);
@@ -70,11 +70,34 @@ void printBoard() {
     }
 }
 
+int lengthInt(int i) {
+    int result = 0;
+    while (i != 0 ) {
+        result++;
+        i /= 10;
+    }
+    return result;
+}
+
 void printSteps() {
     int stepsAmount = sizeX*sizeY;
-
-    for(int i = 0; i < stepsAmount; i++) {
-        printf("(%d,%d) ", steps[i].x + 1, steps[i].y + 1);
+    int magnitude = lengthInt(stepsAmount);
+    
+    char printfFormat[100] = "%0";
+    char magnitudeString[10];
+    sprintf(magnitudeString, "%d", magnitude);
+    
+    strcat(printfFormat, magnitudeString);
+    strcat(printfFormat, "d  ");
+    
+    // --> printfFormat = "%0Xd\n" -->X is the number of digits that the largest step contains
+    
+    for(int x = 0; x < sizeX; x++) {
+        for(int y = 0; y < sizeY; y++) {
+            printf(printfFormat, *(steps + y*sizeX + x));
+        }
+        printf("\n");
+        printf("\n");
     }
 
     printf("\n");
@@ -176,8 +199,7 @@ struct coord getFieldByNumber(int initialX, int initialY, int fieldNumber) {
 void addStepToSteps(int posX, int posY, int step) {
     // Steps can not be larger than the possible amount of steps.
     if (step < sizeX * sizeY) {
-        steps[step].x = posX;
-        steps[step].y = posY;
+        *(steps + posY*sizeX + posX) = step;
     } else {
         printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
     }
@@ -357,7 +379,7 @@ struct coord setupInitialPosition() {
 // Allocate and 0-initialize board and steps arrays
 void resetBoardAndSteps() {
     board = (int *)calloc(sizeX * sizeY, sizeof(int));
-    steps = (struct coord *)calloc(sizeX * sizeY, sizeof(struct coord));
+    steps = (int *)calloc(sizeX * sizeY, sizeof(int));
 }
 
 double calcEffectivity() {
@@ -379,7 +401,6 @@ double calcEffectivity() {
 }
 
 int main() {
-    
     printf("1: Startfeld wird vom Programm gewählt.\n");
     printf("2: Startfeld wird vom Anwender frei gewählt.\n");
     printf("3: Startfeld wird vom Anwender frei gewählt, der Springer geht einen geschlossenen Pfad.\n");
