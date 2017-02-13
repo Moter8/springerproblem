@@ -21,7 +21,7 @@
     #define PIECE_ACTIVE  "\x1b[33m@ \x1b[0m"
 #endif
 
-// Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
+// Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharingIsCaring
 
 // TODO: Code a menu so the user can choose which Algorithm he wants to run.
 // Alternative: offer this as command-line option.
@@ -42,16 +42,17 @@ int sizeX, sizeY;
 struct coord *steps;
 bool monitoring = false;
 
+void resetBoardAndSteps();
 bool getFieldVal(int posX, int posY);
 void setFieldVal(int posX, int posY, bool val);
 bool checkFieldVal(int posX, int posY, int numb);
 bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb);
-bool simpleBackTracking(int posX, int posY, int numb);
+//bool simpleBackTracking(int posX, int posY, int numb);
 int promptForDigits(char prompt[]);
 int promptForDigitsLimit(char prompt[], int upperLimit);
 bool isBoardCompleted();
 bool startWarnsdorfBackTracking(int initialX, int initialY);
-bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb);
+bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb, int maxTries, int modifier);
 int countPossibleSteps(int initialX, int initialY);
 
 void printBoard() {
@@ -96,76 +97,39 @@ void setFieldVal(int posX, int posY, bool val) {
 }
 
 //ersetzt später checkFieldValNumb
-struct coord getFieldByNumber(int initialX, int initialY, int fieldNumber) {
+struct coord getFieldByNumber(int initialX, int initialY, int fieldNumber, int modifier) {
     struct coord result = {.x = initialX, .y = initialY};
+    fieldNumber = (fieldNumber + modifier)%8;
     switch (fieldNumber) {
-        //Neue Reihenfolge schneller am Rand, langsamer in der Mitte
-        //durchschnittlich kein Unterschied
-        /*
-        case 0:
-            result.x -= 1;
+        case (0):
+            result.x += 2;
+            result.y += 1;
+            break;
+        case (1):
+            result.x += 2;
+            result.y -= 1;
+            break;
+        case (2):
+            result.x -= 2;
+            result.y += 1;
+            break;
+        case (3):
+            result.x -= 2;
+            result.y -= 1;
+            break;
+        case (4):
+            result.x += 1;
             result.y += 2;
             break;
-        case 1:
+        case (5):
             result.x += 1;
             result.y -= 2;
             break;
-        case 2:
-            result.x += 2;
-            result.y += 1;
-            break;
-        case 3:
-            result.x -= 2;
-            result.y -= 1;
-            break;
-        case 4:
-            result.x += 1;
-            result.y += 2;
-            break;
-        case 5:
-            result.x -= 1;
-            result.y -= 2;
-            break;
-        case 6:
-            result.x += 2;
-            result.y -= 1;
-            break;
-        case 7:
-            result.x -= 2;
-            result.y += 1;
-            break;
-            */
-
-            //Alte Reihenfolge schneller in der Mitte, langsamer am Rand
-        case 0:
-            result.x += 2;
-            result.y += 1;
-            break;
-        case 1:
-            result.x += 2;
-            result.y -= 1;
-            break;
-        case 2:
-            result.x -= 2;
-            result.y += 1;
-            break;
-        case 3:
-            result.x -= 2;
-            result.y -= 1;
-            break;
-        case 4:
-            result.x += 1;
-            result.y += 2;
-            break;
-        case 5:
-            result.x += 1;
-            result.y -= 2;
-            break;
-        case 6:
+        case (6):
             result.x -= 1;
             result.y += 2;
             break;
-        case 7:
+        case (7):
             result.x -= 1;
             result.y -= 2;
             break;
@@ -183,6 +147,10 @@ void addStepToSteps(int posX, int posY, int step) {
     }
 }
 
+int calcMaxTries() {
+    return sizeX * sizeY;
+}
+
 /*
  * Returns if there is a possible solution for the knights tour
  * on the current field size.
@@ -190,7 +158,7 @@ void addStepToSteps(int posX, int posY, int step) {
  */
 bool startWarnsdorfBackTracking(int initialX, int initialY) {
 	printf("Mode: normal.\n");
-    return warnsdorfBackTracking(initialX, initialY, -1, -1 ,0);
+    return warnsdorfBackTracking(initialX, initialY, -1, -1 ,0, calcMaxTries(), 0);
 }
 
 /*
@@ -200,7 +168,20 @@ bool startWarnsdorfBackTracking(int initialX, int initialY) {
  */
 bool startWarnsdorfBackTrackingClosed(int initialX, int initialY) {
 	printf("Mode: closed.\n");
-    return warnsdorfBackTracking(initialX, initialY, initialX, initialY ,0);
+	int maxTries = calcMaxTries();
+	while (true) {
+    	for (int i = 0; i < 8; i++) {
+    	    effectivity = 0;
+    	    resetBoardAndSteps();
+    	    if (warnsdorfBackTracking(initialX, initialY, initialX, initialY ,0, maxTries , i)) {
+    	        printf("SOLUTION FOUND");
+    	        return true;
+    	}
+	}
+	maxTries *= 2;
+	}
+	printf("NOOOOOOOOOOOO");
+    return 0;
 }
 
 /*
@@ -210,13 +191,16 @@ bool startWarnsdorfBackTrackingClosed(int initialX, int initialY) {
  */
 bool startWarnsdorfBackTrackingDest(int initialX, int initialY, int finalX, int finalY) {
 	printf("Mode: given Destination.\n");
-    return warnsdorfBackTracking(initialX, initialY, finalX, finalY ,0);
+    return warnsdorfBackTracking(initialX, initialY, finalX, finalY ,0, calcMaxTries(), 0);
 }
 
 /*
  * Recursive algorithm for the Knights path
  */
-bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb) {
+bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb, int maxTries, int modifier) {
+    if (effectivity > maxTries) {
+        return false;
+    }
     setFieldVal(posX, posY, true);
 
     if (monitoring) {
@@ -225,7 +209,7 @@ bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb)
 
     if (numb == (sizeX * sizeY - 1)) {
     	for (int i = 0; i < 8; i++) {
-    		struct coord buffer = getFieldByNumber(posX, posY, i);
+    		struct coord buffer = getFieldByNumber(posX, posY, i,0);
     		if ((buffer.x == finalX && buffer.y == finalY) || finalX == -1 || finalY == -1) {
     	        addStepToSteps(posX, posY, numb);
     	        return 1;
@@ -245,7 +229,7 @@ bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb)
 
     // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
     for (int i = 0; i < 8; i++) {
-        struct coord buffer = getFieldByNumber(posX, posY, i);
+        struct coord buffer = getFieldByNumber(posX, posY, i,modifier);
 
         if (!getFieldVal(buffer.x, buffer.y)) {
             followingSteps[i].possibleSteps = countPossibleSteps(buffer.x, buffer.y);
@@ -256,10 +240,14 @@ bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb)
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             if (followingSteps[j].possibleSteps == i) {
-                if (warnsdorfBackTracking(followingSteps[j].position.x, followingSteps[j].position.y, finalX, finalY, numb + 1)) {
+                if (warnsdorfBackTracking(followingSteps[j].position.x, followingSteps[j].position.y, finalX, finalY, numb + 1, maxTries, modifier)) {
                     addStepToSteps(posX, posY, numb);
                     return 1;
+                } else if (effectivity > maxTries) {
+                    setFieldVal(posX, posY, false);
+                    return false;
                 }
+                
             }
         }
     }
@@ -272,7 +260,7 @@ int countPossibleSteps(int initialX, int initialY) {
     int result = 0;
     struct coord buffer;
     for (int i = 0; i < 8; i++) {
-        buffer = getFieldByNumber(initialX, initialY, i);
+        buffer = getFieldByNumber(initialX, initialY, i, 0);
         if(!getFieldVal(buffer.x, buffer.y)) {
             result++;
         }
@@ -280,7 +268,7 @@ int countPossibleSteps(int initialX, int initialY) {
     return result;
 }
 
-
+/*
 bool startSimpleBackTracking(int initialX, int initialY) {
     return simpleBackTracking(initialX, initialY, 0);
 }
@@ -307,7 +295,7 @@ bool simpleBackTracking(int posX, int posY, int numb) {
     setFieldVal(posX, posY, false);
     return 0;
 }
-
+*/
 // http://stackoverflow.com/a/27281028/3991578
 void flushStdIn(void) {
   int ch;
@@ -391,6 +379,19 @@ int main() {
     setupBoardSize();
     resetBoardAndSteps();
     
+    //Test code: 
+    for(int x = 0; x < sizeX;x++) {
+        for(int y = 0; y < sizeY;y++) {
+            monitoring = true;
+            effectivity = 0;
+            startWarnsdorfBackTrackingClosed(x, y);
+            resetBoardAndSteps();
+            printf("x: %d y: %d effectivity: %d ", x, y, effectivity);
+        }
+    }
+    
+    monitoring = true;
+    
     switch (option) {
 
         case 1: { // open with initial values pre-defined
@@ -422,7 +423,6 @@ int main() {
         printf("No solution could be found, please try other values!\n");
     }
 
-    //printf("Effektivität: %.2f \n", calcEffectivity());
     printf("Press enter to exit the program.");
     getchar();
 
