@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+// Löschen? Farben werden kaum benutzt
 #ifdef _WIN32
     #define ANSI_COLOR_GREEN  ""
     #define ANSI_COLOR_RED    ""
@@ -31,30 +32,42 @@ int *steps;
 
 const coord invalid = { .x = -1, .y = -1};
 
-int lengthInt(int i) {
+/*
+ * Returns how many digits one number has.
+ * int num: The number of which the digits are counted.
+ */
+int lengthInt(int num) {
     int result = 0;
-    while (i != 0 ) {
+    while (num != 0 ) {
         result++;
-        i /= 10;
+        num /= 10;
     }
     return result;
 }
 
+/*
+ * Prints out a grid of the order with which the Knight moved.
+ */
 void printSteps() {
     int stepsAmount = sizeX*sizeY;
     int magnitude = lengthInt(stepsAmount);
     
-    char printfFormat[100] = "%0";
+    char printfFormat[30] = "%0";
     char magnitudeString[10];
-    sprintf(magnitudeString, "%d", magnitude);
     
+    /*
+     * printfFormat = "%0Xd\n"
+     * X is the number of digits that the largest step contains
+     * Used to print out leading 0's so the grid stays aligned
+     */
+    
+    sprintf(magnitudeString, "%d", magnitude);
     strcat(printfFormat, magnitudeString);
     strcat(printfFormat, "d  ");
-    
-    // --> printfFormat = "%0Xd\n" -->X is the number of digits that the largest step contains
+     
     for(int x = 0; x < sizeX; x++) {
         for(int y = 0; y < sizeY; y++) {
-            printf(printfFormat, *(steps + y*sizeX + x));
+            printf(printfFormat, *(steps + y*sizeX + x) + 1);
         }
         printf("\n");
         printf("\n");
@@ -63,20 +76,41 @@ void printSteps() {
     printf("\n");
 }
 
+/*
+ * Returns whether a calculated position is withing the board boundaries.
+ * coord pos: The position which is checked.
+ */
+bool checkValid(coord pos) {
+    return pos.x < sizeX && pos.y < sizeY && pos.x >= 0 && pos.y >= 0;
+}
 
-// Gibt nur den Wert von einer bestimmten Position aus.
+/*
+ * Returns whether a field has already been visited or not.
+ * coord pos: The position which is checked.
+ */
 bool getFieldVal(coord pos) {
-    if (pos.x < sizeX && pos.y < sizeY && pos.x >= 0 && pos.y >= 0) {
+    if (checkValid(pos)) {
         return *(board + pos.y*sizeX + pos.x);
     } else {
         return true;
     }
 }
 
-void setFieldVal(coord pos, bool val) {
+/*
+ * Sets the value of a field to true or false.
+ * coord pos: The position which is set.
+ */
+bool setFieldVal(coord pos, bool val) {
     *(board + pos.y*sizeX + pos.x) = val;
 }
 
+/*
+ * Returns a coordinate, which is calculated from the fieldnumber and the
+ * given position.
+ * coord pos: the given position
+ * int fieldNumber: indicates which coordinate relative to the position will
+ *                  be returned
+ */
 coord getFieldByNumber(coord pos, int fieldNumber) {
     switch (fieldNumber) {
         case 0:
@@ -115,16 +149,25 @@ coord getFieldByNumber(coord pos, int fieldNumber) {
     return pos;
 }
 
-void addStepToSteps(coord pos, int step) {
-    // Steps can not be larger than the possible amount of steps.
+/*
+ * Adds a step to the step array for the result output.
+ * int step: The number of the step which is added.
+ * coord pos: Coordinates of the step which is added.
+ */
+bool addStepToSteps(coord pos, int step) {
     if (step < sizeX * sizeY) {
         *(steps + pos.y*sizeX + pos.x) = step;
-        //steps[step] = pos;
+        return true;
     } else {
-        printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
+        exit(1);
     }
 }
 
+/*
+ * Returns how many steps can be performed from this field
+ * after having moved one step further.
+ * coord initial: The field from which the steps are counted.
+ */
 int countPossibleSteps(coord initial) {
     int result = 0;
     coord buffer;
@@ -138,7 +181,13 @@ int countPossibleSteps(coord initial) {
 }
 
 /*
- * Recursive algorithm for the Knights path
+ * Returns if a knights tour is possible and fills the steps array
+ * with the route of the knights tour.
+ * coord pos: Current position of the method.
+ * final pos: Final position which the method tries to reach, if there
+ *             is no given final position it is -1 , -1.
+ * int numb: Counts the moved steps to check if the method is finished,
+ *           the starting value is 0.
  */
 bool warnsdorfBackTracking(coord pos, coord final, int numb) {
     setFieldVal(pos, true);
@@ -146,7 +195,7 @@ bool warnsdorfBackTracking(coord pos, coord final, int numb) {
     if (numb == (sizeX * sizeY - 1)) {
     	for (int i = 0; i < 8; i++) {
     		coord buffer = getFieldByNumber(pos, i);
-    		if ((buffer.x == final.x && buffer.y == final.y) || final.x == -1 || final.y == -1) {
+    		if ((buffer.x == final.x && buffer.y == final.y) || final.x == -1 && final.y == -1) {
     	        addStepToSteps(pos, numb);
     	        return true;
     		}
@@ -163,7 +212,7 @@ bool warnsdorfBackTracking(coord pos, coord final, int numb) {
         {.possibleSteps = -1}, {.possibleSteps = -1}
     };
 
-    // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
+    // Tries to execute all possible moves from the current field.
     for (int i = 0; i < 8; i++) {
         coord buffer = getFieldByNumber(pos, i);
 
@@ -188,13 +237,23 @@ bool warnsdorfBackTracking(coord pos, coord final, int numb) {
     return false;
 }
 
-// http://stackoverflow.com/a/27281028/3991578
+/*
+ * Flushes the standard input stream to "clean" unused input
+ * 
+ * See http://stackoverflow.com/a/27281028/3991578 for more info
+ */
 void flushStdIn() {
   int ch;
   while(((ch = getchar()) !='\n') && (ch != EOF));
 }
 
-// Prompt for a digit between 0 and the upper Limit variable
+/*
+ * Prompts for an integer between 0 and an upper Limit
+ * 
+ * char prompt[]: String that is displayed to the user as a prompt
+ * 
+ * int upperLimit: Limits the integer which can be input
+ */
 int promptForDigitsLimit(char prompt[], int upperLimit) {
     while(true) {
         int input;
@@ -212,26 +271,38 @@ int promptForDigitsLimit(char prompt[], int upperLimit) {
     }
 }
 
-// Prompt for a digit larger than 0.
+/*
+ * Prompt for an integer larger than 0
+ * 
+ * char prompt[]: String that is displayed to the user as a prompt
+ */
 int promptForDigits(char prompt[]) {
     return promptForDigitsLimit(prompt, -1);
 }
 
+
+/*
+ * Prompts the user for the board size and sets the according variables
+ */
 void setupBoardSize() {
     sizeX = promptForDigits("Board Size (x)");
     sizeY = promptForDigits("Board Size (y)");
 }
 
+/*
+ * Prompts the user for the Initial or Destination X and Y Positions
+ * and returns a coord variable with these values
+ *
+ * char option[]: Prefixes the prompt to indicateIntitial/Destination positions
+ */
 coord setupPosition(char option[]) {
-    
-    char stringXSuffix[] = " X Position";
-    char stringYSuffix[] = " Y Position";
-    char stringXPos[30] = "";
-    char stringYPos[30] = "";
+    int length = strlen(option) + 12;
+    char *stringXPos = malloc(length * sizeof(char));
+    char *stringYPos = malloc(length * sizeof(char));
     strcat(stringXPos, option);
-    strcat(stringXPos, stringXSuffix);
+    strcat(stringXPos, " X Position");
     strcat(stringYPos, option);
-    strcat(stringYPos, stringYSuffix);
+    strcat(stringYPos, " Y Position");
     
     coord setup = {
         // Subtract 1 from the given value to go from 1-indexed to 0-indexed.
@@ -241,7 +312,9 @@ coord setupPosition(char option[]) {
     return setup;
 }
 
-// Allocate and 0-initialize board and steps arrays
+/*
+ * (Re-)Initialize board and step array with the values 0.
+ */
 void resetBoardAndSteps() {
     board = (bool *)calloc(sizeX * sizeY, sizeof(bool));
     steps = (int *)calloc(sizeX * sizeY, sizeof(int));
@@ -251,6 +324,7 @@ void resetBoardAndSteps() {
  * Returns if there is a possible solution for the knights tour
  * on the current field size.
  * If found, the solution is saved in steps.
+  * coord initial: Coordinate at which the knights tour starts.
  */
 bool startWarnsdorfBackTracking(coord initial) {
 	printf("Mode: normal.\n");
@@ -258,9 +332,10 @@ bool startWarnsdorfBackTracking(coord initial) {
 }
 
 /*
- * Returns if there is a possible solution for a closed knights tour
+ * Returns true if there is a possible solution for a closed knights tour
  * on the current field size.
  * If found, the solution is saved in steps.
+  * coord initial: Coordinate at which the knights tour starts and ends.
  */
 bool startWarnsdorfBackTrackingClosed(coord initial) {
 	printf("Mode: closed.\n");
@@ -268,9 +343,11 @@ bool startWarnsdorfBackTrackingClosed(coord initial) {
 }
 
 /*
- * Returns if there is a possible solution for the knights tour,
+ * Returns true if there is a possible solution for the knights tour,
  * on the current field size with a given final destination.
  * If found, the solution is saved in steps.
+ * coord initial: Coordinate at which the knights tour starts.
+ * coord final: Coordinate at which the knights tour ends.
  */
 bool startWarnsdorfBackTrackingDest(coord initial, coord final) {
 	printf("Mode: given destination.\n");
@@ -282,7 +359,7 @@ int main() {
     printf("1: Startfeld wird vom Programm gewählt.\n");
     printf("2: Startfeld wird vom Anwender frei gewählt.\n");
     printf("3: Startfeld wird vom Anwender frei gewählt, der Springer geht einen geschlossenen Pfad.\n");
-    printf("4: Startfeld und Endfeld werden vom Anwender frei gewählt.\n");
+    printf("4: Startfeld und erreichbares Endfeld werden vom Anwender frei gewählt.\n");
     
     int option = promptForDigitsLimit("Wählen Sie bitte zwischen den Optionen 1, 2, 3 und 4 aus", 4);
     bool result = false;
@@ -324,6 +401,9 @@ int main() {
     } else {
         printf("No solution could be found, please try other values!\n");
     }
+    
+    free(board);
+    free(steps);
     
     flushStdIn();
     printf("Press enter to exit the program.");
