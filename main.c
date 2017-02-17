@@ -185,18 +185,18 @@ int countPossibleSteps(coord initial) {
  * with the route of the knights tour.
  * coord pos: Current position of the method.
  * final pos: Final position which the method tries to reach, if there
- *             is no given final position it is -1 , -1.
- * int numb: Counts the moved steps to check if the method is finished,
+ *            is no given final position it is -1 , -1.
+ * int counter: Counts the moved steps to check if the method is finished,
  *           the starting value is 0.
  */
-bool warnsdorfBackTracking(coord pos, coord final, int numb) {
+bool backTracking(coord pos, coord final, int counter) {
     setFieldVal(pos, true);
 
-    if (numb == (sizeX * sizeY - 1)) {
+    if (counter == (sizeX * sizeY - 1)) {
     	for (int i = 0; i < 8; i++) {
     		coord buffer = getFieldByNumber(pos, i);
     		if ((buffer.x == final.x && buffer.y == final.y) || final.x == -1 && final.y == -1) {
-    	        addStepToSteps(pos, numb);
+    	        addStepToSteps(pos, counter);
     	        return true;
     		}
     	}
@@ -225,8 +225,8 @@ bool warnsdorfBackTracking(coord pos, coord final, int numb) {
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             if (followingSteps[j].possibleSteps == i) {
-                if (warnsdorfBackTracking(followingSteps[j].position, final, numb + 1)) {
-                    addStepToSteps(pos, numb);
+                if ( backTracking(followingSteps[j].position, final, counter + 1)) {
+                    addStepToSteps(pos, counter);
                     return true;
                 }
             }
@@ -326,9 +326,9 @@ void resetBoardAndSteps() {
  * If found, the solution is saved in steps.
   * coord initial: Coordinate at which the knights tour starts.
  */
-bool startWarnsdorfBackTracking(coord initial) {
+bool startBackTracking(coord initial) {
 	printf("Mode: normal.\n");
-    return warnsdorfBackTracking(initial, invalid, 0);
+    return backTracking(initial, invalid, 0);
 }
 
 /*
@@ -337,9 +337,9 @@ bool startWarnsdorfBackTracking(coord initial) {
  * If found, the solution is saved in steps.
   * coord initial: Coordinate at which the knights tour starts and ends.
  */
-bool startWarnsdorfBackTrackingClosed(coord initial) {
+bool startBackTrackingClosed(coord initial) {
 	printf("Mode: closed.\n");
-    return warnsdorfBackTracking(initial, initial ,0);
+    return backTracking(initial, initial ,0);
 }
 
 /*
@@ -349,9 +349,9 @@ bool startWarnsdorfBackTrackingClosed(coord initial) {
  * coord initial: Coordinate at which the knights tour starts.
  * coord final: Coordinate at which the knights tour ends.
  */
-bool startWarnsdorfBackTrackingDest(coord initial, coord final) {
+bool startBackTrackingDest(coord initial, coord final) {
 	printf("Mode: given destination.\n");
-    return warnsdorfBackTracking(initial, final, 0);
+    return backTracking(initial, final, 0);
 }
 
 int main() {
@@ -373,23 +373,23 @@ int main() {
         case 1: { // open with initial values pre-defined
         printf("Starting at Position (1,1).\n");
             coord initial = { .x = 0 , .y = 0 };
-            result = startWarnsdorfBackTracking(initial);
+            result = startBackTracking(initial);
             break;
         }
         case 2: { // open
             initial = setupPosition("Initial");
-            result = startWarnsdorfBackTracking(initial);
+            result = startBackTracking(initial);
             break;
         }
         case 3: { // closed
             initial = setupPosition("Initial");
-            result = startWarnsdorfBackTrackingClosed(initial);
+            result = startBackTrackingClosed(initial);
             break;
         }
         case 4: {
             initial = setupPosition("Initial");
             coord final = setupPosition("Final");
-            result = startWarnsdorfBackTrackingDest(initial, final);
+            result = startBackTrackingDest(initial, final);
             break;
         }
     }
