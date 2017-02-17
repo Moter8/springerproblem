@@ -3,265 +3,178 @@
 #include <stdbool.h>
 #include <string.h>
 
+// Löschen? Farben werden kaum benutzt
 #ifdef _WIN32
     #define ANSI_COLOR_GREEN  ""
     #define ANSI_COLOR_RED    ""
     #define ANSI_COLOR_RESET  ""
-
-    #define PIECE_ODD    "x "
-    #define PIECE_EVEN   "o "
-    #define PIECE_ACTIVE "@ "
 #else
     #define ANSI_COLOR_GREEN  "\x1b[32m"
     #define ANSI_COLOR_RED    "\x1b[31m"
     #define ANSI_COLOR_RESET  "\x1b[0m"
-
-    #define PIECE_ODD     "\x1b[31mx \x1b[0m"
-    #define PIECE_EVEN    "\x1b[34mo \x1b[0m"
-    #define PIECE_ACTIVE  "\x1b[33m@ \x1b[0m"
 #endif
 
-// Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharingIsCaring
+// Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
 
-// TODO: Code a menu so the user can choose which Algorithm he wants to run.
-// Alternative: offer this as command-line option.
-
-struct coord {
+typedef struct {
     int x;
     int y;
-};
+} coord;
 
-struct extCoord {
-    struct coord position;
+typedef struct {
+    coord position;
     int possibleSteps;
-};
+} extCoord;
 
-int effectivity = 0;
-int *board;
+bool *board;
 int sizeX, sizeY;
-struct coord *steps;
-bool monitoring = false;
+int *steps;
 
-void resetBoardAndSteps();
-bool getFieldVal(int posX, int posY);
-void setFieldVal(int posX, int posY, bool val);
-bool checkFieldVal(int posX, int posY, int numb);
-bool checkFieldValNumb(int posX, int posY, int fieldNumber, int numb);
-//bool simpleBackTracking(int posX, int posY, int numb);
-int promptForDigits(char prompt[]);
-int promptForDigitsLimit(char prompt[], int upperLimit);
-bool isBoardCompleted();
-bool startWarnsdorfBackTracking(int initialX, int initialY);
-bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb, int maxTries, int modifier);
-int countPossibleSteps(int initialX, int initialY);
+const coord invalid = { .x = -1, .y = -1};
 
-void printBoard() {
-    for (int y = 0; y < sizeY; y++) {
-        for (int x = 0; x < sizeX; x++) {
-            if (getFieldVal(x, y)) {
-                printf(PIECE_ACTIVE);
-            } else if((y + x)%2) {
-                printf(PIECE_EVEN);
-            } else {
-                printf(PIECE_ODD);
-            }
-            //printf(getFieldVal(x, y) ? PIECE_ACTIVE : (y + x)%2 == 0 ? PIECE_EVEN : PIECE_ODD);
-        }
-        printf("\n");
+/*
+ * Returns how many digits one number has.
+ * int num: The number of which the digits are counted.
+ */
+int lengthInt(int num) {
+    int result = 0;
+    while (num != 0 ) {
+        result++;
+        num /= 10;
     }
+    return result;
 }
 
+/*
+ * Prints out a grid of the order with which the Knight moved.
+ */
 void printSteps() {
     int stepsAmount = sizeX*sizeY;
-
-    for(int i = 0; i < stepsAmount; i++) {
-        printf("(%d,%d) ", steps[i].x + 1, steps[i].y + 1);
+    int magnitude = lengthInt(stepsAmount);
+    
+    char printfFormat[30] = "%0";
+    char magnitudeString[10];
+    
+    /*
+     * printfFormat = "%0Xd\n"
+     * X is the number of digits that the largest step contains
+     * Used to print out leading 0's so the grid stays aligned
+     */
+    
+    sprintf(magnitudeString, "%d", magnitude);
+    strcat(printfFormat, magnitudeString);
+    strcat(printfFormat, "d  ");
+     
+    for(int x = 0; x < sizeX; x++) {
+        for(int y = 0; y < sizeY; y++) {
+            printf(printfFormat, *(steps + y*sizeX + x) + 1);
+        }
+        printf("\n");
+        printf("\n");
     }
 
     printf("\n");
 }
 
+/*
+ * Returns whether a calculated position is withing the board boundaries.
+ * coord pos: The position which is checked.
+ */
+bool checkValid(coord pos) {
+    return pos.x < sizeX && pos.y < sizeY && pos.x >= 0 && pos.y >= 0;
+}
 
-// Gibt nur den Wert von einer bestimmten Position aus.
-bool getFieldVal(int posX, int posY) {
-    if (posX < sizeX && posY < sizeY && posX >= 0 && posY >= 0) {
-        return *(board + posY*sizeX + posX);
+/*
+ * Returns whether a field has already been visited or not.
+ * coord pos: The position which is checked.
+ */
+bool getFieldVal(coord pos) {
+    if (checkValid(pos)) {
+        return *(board + pos.y*sizeX + pos.x);
     } else {
         return true;
     }
 }
 
-void setFieldVal(int posX, int posY, bool val) {
-    // http://i.imgur.com/KCztDMN.png
-    *(board + posY*sizeX + posX) = val;
+/*
+ * Sets the value of a field to true or false.
+ * coord pos: The position which is set.
+ */
+bool setFieldVal(coord pos, bool val) {
+    *(board + pos.y*sizeX + pos.x) = val;
 }
 
-//ersetzt später checkFieldValNumb
-struct coord getFieldByNumber(int initialX, int initialY, int fieldNumber, int modifier) {
-    struct coord result = {.x = initialX, .y = initialY};
+/*
+ * Returns a coordinate, which is calculated from the fieldnumber and the
+ * given position.
+ * coord pos: the given position
+ * int fieldNumber: indicates which coordinate relative to the position will
+ *                  be returned.
+ */
+coord getFieldByNumber(coord pos, int fieldNumber, int modifier) {
     fieldNumber = (fieldNumber + modifier)%8;
     switch (fieldNumber) {
-        case (0):
-            result.x += 2;
-            result.y += 1;
+        case 0:
+            pos.x += 2;
+            pos.y += 1;
             break;
-        case (1):
-            result.x += 2;
-            result.y -= 1;
+        case 1:
+            pos.x += 2;
+            pos.y -= 1;
             break;
-        case (2):
-            result.x -= 2;
-            result.y += 1;
+        case 2:
+            pos.x -= 2;
+            pos.y += 1;
             break;
-        case (3):
-            result.x -= 2;
-            result.y -= 1;
+        case 3:
+            pos.x -= 2;
+            pos.y -= 1;
             break;
-        case (4):
-            result.x += 1;
-            result.y += 2;
+        case 4:
+            pos.x += 1;
+            pos.y += 2;
             break;
-        case (5):
-            result.x += 1;
-            result.y -= 2;
+        case 5:
+            pos.x += 1;
+            pos.y -= 2;
             break;
-        case (6):
-            result.x -= 1;
-            result.y += 2;
+        case 6:
+            pos.x -= 1;
+            pos.y += 2;
             break;
-        case (7):
-            result.x -= 1;
-            result.y -= 2;
+        case 7:
+            pos.x -= 1;
+            pos.y -= 2;
             break;
     }
-    return result;
+    return pos;
 }
 
-void addStepToSteps(int posX, int posY, int step) {
-    // Steps can not be larger than the possible amount of steps.
+/*
+ * Adds a step to the step array for the result output.
+ * int step: The number of the step which is added.
+ * coord pos: Coordinates of the step which is added.
+ */
+bool addStepToSteps(coord pos, int step) {
     if (step < sizeX * sizeY) {
-        steps[step].x = posX;
-        steps[step].y = posY;
+        *(steps + pos.y*sizeX + pos.x) = step;
+        return true;
     } else {
-        printf( ANSI_COLOR_RED "ERROR: Access to Steps out of bounds (Tried to access index %d but steps is only %d large)\n" ANSI_COLOR_RESET, step, sizeX*sizeY);
+        exit(1);
     }
-}
-
-int calcMaxTries() {
-    return sizeX * sizeY;
 }
 
 /*
- * Returns if there is a possible solution for the knights tour
- * on the current field size.
- * If found, the solution is saved in steps.
+ * Returns how many steps can be performed from this field
+ * after having moved one step further.
+ * coord initial: The field from which the steps are counted.
  */
-bool startWarnsdorfBackTracking(int initialX, int initialY) {
-	printf("Mode: normal.\n");
-    return warnsdorfBackTracking(initialX, initialY, -1, -1 ,0, calcMaxTries(), 0);
-}
-
-/*
- * Returns if there is a possible solution for a closed knights tour
- * on the current field size.
- * If found, the solution is saved in steps.
- */
-bool startWarnsdorfBackTrackingClosed(int initialX, int initialY) {
-	printf("Mode: closed.\n");
-	int maxTries = calcMaxTries();
-	while (true) {
-    	for (int i = 0; i < 8; i++) {
-    	    effectivity = 0;
-    	    resetBoardAndSteps();
-    	    if (warnsdorfBackTracking(initialX, initialY, initialX, initialY ,0, maxTries , i)) {
-    	        printf("SOLUTION FOUND");
-    	        return true;
-    	}
-	}
-	maxTries *= 2;
-	}
-	printf("NOOOOOOOOOOOO");
-    return 0;
-}
-
-/*
- * Returns if there is a possible solution for the knights tour,
- * on the current field size with a given final destination.
- * If found, the solution is saved in steps.
- */
-bool startWarnsdorfBackTrackingDest(int initialX, int initialY, int finalX, int finalY) {
-	printf("Mode: given Destination.\n");
-    return warnsdorfBackTracking(initialX, initialY, finalX, finalY ,0, calcMaxTries(), 0);
-}
-
-/*
- * Recursive algorithm for the Knights path
- */
-bool warnsdorfBackTracking(int posX, int posY, int finalX, int finalY, int numb, int maxTries, int modifier) {
-    if (effectivity > maxTries) {
-        return false;
-    }
-    setFieldVal(posX, posY, true);
-
-    if (monitoring) {
-        effectivity++;
-    }
-
-    if (numb == (sizeX * sizeY - 1)) {
-    	for (int i = 0; i < 8; i++) {
-    		struct coord buffer = getFieldByNumber(posX, posY, i,0);
-    		if ((buffer.x == finalX && buffer.y == finalY) || finalX == -1 || finalY == -1) {
-    	        addStepToSteps(posX, posY, numb);
-    	        return 1;
-    		}
-    	}
-    	setFieldVal(posX, posY, false);
-    	return 0;
-    }
-
-    struct extCoord followingSteps[8] =
-    {
-        {.possibleSteps = -1}, {.possibleSteps = -1},
-        {.possibleSteps = -1}, {.possibleSteps = -1},
-        {.possibleSteps = -1}, {.possibleSteps = -1},
-        {.possibleSteps = -1}, {.possibleSteps = -1}
-    };
-
-    // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
-    for (int i = 0; i < 8; i++) {
-        struct coord buffer = getFieldByNumber(posX, posY, i,modifier);
-
-        if (!getFieldVal(buffer.x, buffer.y)) {
-            followingSteps[i].possibleSteps = countPossibleSteps(buffer.x, buffer.y);
-            followingSteps[i].position = buffer;
-        }
-    }
-
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            if (followingSteps[j].possibleSteps == i) {
-                if (warnsdorfBackTracking(followingSteps[j].position.x, followingSteps[j].position.y, finalX, finalY, numb + 1, maxTries, modifier)) {
-                    addStepToSteps(posX, posY, numb);
-                    return 1;
-                } else if (effectivity > maxTries) {
-                    setFieldVal(posX, posY, false);
-                    return false;
-                }
-                
-            }
-        }
-    }
-
-    setFieldVal(posX, posY, false);
-    return 0;
-}
-
-int countPossibleSteps(int initialX, int initialY) {
+int countPossibleSteps(coord initial) {
     int result = 0;
-    struct coord buffer;
+    coord buffer;
     for (int i = 0; i < 8; i++) {
-        buffer = getFieldByNumber(initialX, initialY, i, 0);
-        if(!getFieldVal(buffer.x, buffer.y)) {
+        buffer = getFieldByNumber(initial, i, 0);
+        if(!getFieldVal(buffer)) {
             result++;
         }
     }
@@ -269,47 +182,94 @@ int countPossibleSteps(int initialX, int initialY) {
 }
 
 /*
-bool startSimpleBackTracking(int initialX, int initialY) {
-    return simpleBackTracking(initialX, initialY, 0);
-}
+ * Returns if a knights tour is possible and fills the steps array
+ * with the route of the knights tour.
+ * coord pos: Current position of the method.
+ * final pos: Final position which the method tries to reach, if there
+ *            is no given final position it is -1 , -1.
+ * int counter: Counts the moved steps to check if the method is finished,
+ *           the starting value is 0.
+ * int *tries: pointer to an int which displays the left tries, until the
+ *             method returns false and terminates.
+ * int modifier: Modifies the order in which the next step is calculated.
+ */
+bool backTrackingAlgorithm(coord pos, coord final, int counter,
+                           int *tries, int modifier) {
+    setFieldVal(pos, true);
+    (*tries)--;
+    //printf("%d--", *tries );
 
-// Recursive algorithm for backTracking
-bool simpleBackTracking(int posX, int posY, int numb) {
-    setFieldVal(posX, posY, true);
-
-    if (numb == (sizeX * sizeY - 1)) {
-
-        addStepToSteps(posX, posY, numb);
-        return 1;
+    if (counter == (sizeX * sizeY - 1)) {
+    	for (int i = 0; i < 8; i++) {
+    		coord buffer = getFieldByNumber(pos, i, 0);
+    		if ((buffer.x == final.x && buffer.y == final.y) 
+    		    || final.x == -1 && final.y == -1) {
+    	        addStepToSteps(pos, counter);
+    	        return true;
+    		}
+    	}
+    	setFieldVal(pos, false);
+    	return false;
     }
 
-    // Versucht alle möglichen Züge vom aktuellem Feld auszuführen.
-    for (int i = 0; i <= 7; i++) {
-        struct coord temp = getFieldByNumber(posX, posY, i);
-        if (!getFieldVal(temp.x, temp.y) && simpleBackTracking(temp.x, temp.y, numb + 1)) {
-            addStepToSteps(posX, posY, numb);
-            return 1;
+    extCoord followingSteps[8] =
+    {
+        {.possibleSteps = -1}, {.possibleSteps = -1},
+        {.possibleSteps = -1}, {.possibleSteps = -1},
+        {.possibleSteps = -1}, {.possibleSteps = -1},
+        {.possibleSteps = -1}, {.possibleSteps = -1}
+    };
+
+    // Tries to execute all possible moves from the current field.
+    for (int i = 0; i < 8; i++) {
+        coord buffer = getFieldByNumber(pos, i, modifier);
+
+        if (!getFieldVal(buffer)) {
+            followingSteps[i].possibleSteps = countPossibleSteps(buffer);
+            followingSteps[i].position = buffer;
         }
     }
 
-    setFieldVal(posX, posY, false);
-    return 0;
+    // TODO: Beschreibung
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (followingSteps[j].possibleSteps == i) {
+                if ( backTrackingAlgorithm(followingSteps[j].position, final,
+                                           counter + 1, tries, modifier)) {
+                    addStepToSteps(pos, counter);
+                    return true;
+                }
+                if ( *tries <= 0 ) return false;
+            }
+        }
+    }
+
+    setFieldVal(pos, false);
+    return false;
 }
-*/
-// http://stackoverflow.com/a/27281028/3991578
-void flushStdIn(void) {
+
+/*
+ * Flushes the standard input stream to "clean" unused input
+ * 
+ * See http://stackoverflow.com/a/27281028/3991578 for more info
+ */
+void flushStdIn() {
   int ch;
   while(((ch = getchar()) !='\n') && (ch != EOF));
 }
 
-// Prompt for a digit between 0 and the upper Limit variable
+/*
+ * Prompts for an integer between 0 and an upper Limit
+ * 
+ * char prompt[]: String that is displayed to the user as a prompt
+ * 
+ * int upperLimit: Limits the integer which can be input
+ */
 int promptForDigitsLimit(char prompt[], int upperLimit) {
     while(true) {
         int input;
         printf("%s: ", prompt);
-
         if (scanf("%d", &input) <= 0) {
-            flushStdIn();
             printf("Input must be a number.\n");
         } else if (input > upperLimit && upperLimit != -1) {
             printf("Number can't be greater than %d.\n", upperLimit);
@@ -318,52 +278,111 @@ int promptForDigitsLimit(char prompt[], int upperLimit) {
         } else {
             return input;
         }
+        flushStdIn();
     }
 }
 
-// Prompt for a digit larger than 0.
+/*
+ * Prompt for an integer larger than 0
+ * 
+ * char prompt[]: String that is displayed to the user as a prompt
+ */
 int promptForDigits(char prompt[]) {
     return promptForDigitsLimit(prompt, -1);
 }
 
+
+/*
+ * Prompts the user for the board size and sets the according variables
+ */
 void setupBoardSize() {
     sizeX = promptForDigits("Board Size (x)");
     sizeY = promptForDigits("Board Size (y)");
 }
 
-struct coord setupInitialPosition() {
+/*
+ * Prompts the user for the Initial or Destination X and Y Positions
+ * and returns a coord variable with these values
+ *
+ * char option[]: Prefixes the prompt to indicateIntitial/Destination positions
+ */
+coord setupPosition(char option[]) {
+    int length = strlen(option) + 12;
+    char *stringXPos = malloc(length * sizeof(char));
+    char *stringYPos = malloc(length * sizeof(char));
+    strcat(stringXPos, option);
+    strcat(stringXPos, " X Position");
+    strcat(stringYPos, option);
+    strcat(stringYPos, " Y Position");
     
-    struct coord initial = {
+    coord setup = {
         // Subtract 1 from the given value to go from 1-indexed to 0-indexed.
-        .x = promptForDigitsLimit("Initial X Position", sizeX) - 1,
-        .y = promptForDigitsLimit("Initial Y Position", sizeY) - 1
+        .x = promptForDigitsLimit(stringXPos, sizeX) - 1,
+        .y = promptForDigitsLimit(stringYPos, sizeY) - 1
     };
-
-    return initial;
+    return setup;
 }
 
-// Allocate and 0-initialize board and steps arrays
+/*
+ * (Re-)Initialize board and step array with the values 0.
+ */
 void resetBoardAndSteps() {
-    board = (int *)calloc(sizeX * sizeY, sizeof(int));
-    steps = (struct coord *)calloc(sizeX * sizeY, sizeof(struct coord));
+    board = (bool *)calloc(sizeX * sizeY, sizeof(bool));
+    steps = (int *)calloc(sizeX * sizeY, sizeof(int));
 }
 
-double calcEffectivity() {
-    monitoring = true;
-
-    double result = 0;
-    for (int x = 0; x < sizeX; x++) {
-        for (int y = 0; y < sizeY; y++) {
-            effectivity = 0;
-            //warnsdorfBackTracking(x, y, 0);
-            result += effectivity;
-            printf("x:%d y:%d Effektiviät: %d \n", x,y,effectivity);
+/* Returns if a solution is possible, and fills the steps array with the
+ * needed steps to perform the knights tour. Tries different modifier for 
+ * the backtracking method.
+ * coord pos: Current position of the method.
+ * final pos: Final position which the method tries to reach, if there
+ */
+bool backTracking(coord initial, coord final) {
+    int maxTries = sizeX * sizeY;
+    while (true) {
+        for (int i = 0; i < 8; i++) {
+            printf("i=%d\n", i);
+            int tries = maxTries;
+            if (backTrackingAlgorithm(initial, final, 0, &tries, i)) return true;
             resetBoardAndSteps();
         }
+        printf("Max Tries: %d\n", maxTries);
+        maxTries *= 2;
     }
-    result = result / (sizeX * sizeY);;
-    monitoring = false;
-    return result;
+}
+
+/*
+ * Returns if there is a possible solution for the knights tour
+ * on the current field size.
+ * If found, the solution is saved in steps.
+  * coord initial: Coordinate at which the knights tour starts.
+ */
+bool startBackTracking(coord initial) {
+	printf("Mode: normal.\n");
+    return backTracking(initial, invalid);
+}
+
+/*
+ * Returns true if there is a possible solution for a closed knights tour
+ * on the current field size.
+ * If found, the solution is saved in steps.
+  * coord initial: Coordinate at which the knights tour starts and ends.
+ */
+bool startBackTrackingClosed(coord initial) {
+	printf("Mode: closed.\n");
+    return backTracking(initial, initial);
+}
+
+/*
+ * Returns true if there is a possible solution for the knights tour,
+ * on the current field size with a given final destination.
+ * If found, the solution is saved in steps.
+ * coord initial: Coordinate at which the knights tour starts.
+ * coord final: Coordinate at which the knights tour ends.
+ */
+bool startBackTrackingDest(coord initial, coord final) {
+	printf("Mode: given destination.\n");
+    return backTracking(initial, final);
 }
 
 int main() {
@@ -371,61 +390,55 @@ int main() {
     printf("1: Startfeld wird vom Programm gewählt.\n");
     printf("2: Startfeld wird vom Anwender frei gewählt.\n");
     printf("3: Startfeld wird vom Anwender frei gewählt, der Springer geht einen geschlossenen Pfad.\n");
+    printf("4: Startfeld und erreichbares Endfeld werden vom Anwender frei gewählt.\n");
     
-    int option = promptForDigitsLimit("Wählen Sie bitte zwischen den Optionen 1, 2 und 3 aus", 3);
+    int option = promptForDigitsLimit("Wählen Sie bitte zwischen den Optionen 1, 2, 3 und 4 aus", 4);
     bool result = false;
-    struct coord initial;
+    coord initial;
     
     setupBoardSize();
     resetBoardAndSteps();
     
-    //Test code: 
-    for(int x = 0; x < sizeX;x++) {
-        for(int y = 0; y < sizeY;y++) {
-            monitoring = true;
-            effectivity = 0;
-            startWarnsdorfBackTrackingClosed(x, y);
-            resetBoardAndSteps();
-            printf("x: %d y: %d effectivity: %d ", x, y, effectivity);
-        }
-    }
-    
-    monitoring = true;
-    
     switch (option) {
 
         case 1: { // open with initial values pre-defined
-            result = startWarnsdorfBackTracking(0, 0);
+        printf("Starting at Position (1,1).\n");
+            coord initial = { .x = 0 , .y = 0 };
+            result = startBackTracking(initial);
             break;
         }
         case 2: { // open
-            initial = setupInitialPosition();
-            result = startWarnsdorfBackTracking(initial.x, initial.y);
+            initial = setupPosition("Initial");
+            result = startBackTracking(initial);
             break;
         }
         case 3: { // closed
-            initial = setupInitialPosition();
-            result = startWarnsdorfBackTrackingClosed(initial.x, initial.y);
+            initial = setupPosition("Initial");
+            result = startBackTrackingClosed(initial);
+            break;
+        }
+        case 4: {
+            initial = setupPosition("Initial");
+            coord final = setupPosition("Final");
+            result = startBackTrackingDest(initial, final);
             break;
         }
     }
-/*
-    setFieldVal(initial.x, initial.y, true); // just for the output, doesn't alter algorithm
-    printf("\nStartfeld:\n");
-    printBoard();
-*/
+
     if(result) {
-        printf( ANSI_COLOR_GREEN "\nA solution has been found!\n" ANSI_COLOR_RESET);
-        printf("\nErgebnisfeld:\n");
-        printBoard();
+        printf( ANSI_COLOR_GREEN "\nA solution has been found!\n"
+                ANSI_COLOR_RESET);
+        printf("\nSolution Steps:\n");
         printSteps();
     } else {
         printf("No solution could be found, please try other values!\n");
     }
-
+    
+    free(board);
+    free(steps);
+    
+    flushStdIn();
     printf("Press enter to exit the program.");
-    getchar();
-
     getchar();
     return 0;
 }
