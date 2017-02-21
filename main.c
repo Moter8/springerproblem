@@ -109,10 +109,11 @@ bool setFieldVal(coord pos, bool val) {
  * given position.
  * coord pos: the given position
  * int fieldNumber: indicates which coordinate relative to the position will
- *                  be returned.
+ *                  be returned
  */
 coord getFieldByNumber(coord pos, int fieldNumber, int modifier) {
     fieldNumber = (fieldNumber + modifier)%8;
+    if (modifier >= 8) fieldNumber = (fieldNumber + 4)%8;
     switch (fieldNumber) {
         case 0:
             pos.x += 2;
@@ -230,16 +231,18 @@ bool backTrackingAlgorithm(coord pos, coord final, int counter,
         }
     }
 
-    // TODO: Beschreibung
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             if (followingSteps[j].possibleSteps == i) {
+                if ( *tries <= 0 ) {
+                    setFieldVal(pos, false);
+                    return false;
+                }
                 if ( backTrackingAlgorithm(followingSteps[j].position, final,
                                            counter + 1, tries, modifier)) {
                     addStepToSteps(pos, counter);
                     return true;
                 }
-                if ( *tries <= 0 ) return false;
             }
         }
     }
@@ -338,15 +341,17 @@ void resetBoardAndSteps() {
  * final pos: Final position which the method tries to reach, if there
  */
 bool backTracking(coord initial, coord final) {
-    int maxTries = sizeX * sizeY;
+    printf("test");
+    int maxTries = sizeX * sizeY - 1;
     while (true) {
         for (int i = 0; i < 8; i++) {
-            printf("i=%d\n", i);
             int tries = maxTries;
+            printf("%d", i);
             if (backTrackingAlgorithm(initial, final, 0, &tries, i)) return true;
             resetBoardAndSteps();
+
         }
-        printf("Max Tries: %d\n", maxTries);
+        printf("%d", maxTries);
         maxTries *= 2;
     }
 }
@@ -366,10 +371,18 @@ bool startBackTracking(coord initial) {
  * Returns true if there is a possible solution for a closed knights tour
  * on the current field size.
  * If found, the solution is saved in steps.
-  * coord initial: Coordinate at which the knights tour starts and ends.
+ * coord initial: Coordinate at which the knights tour starts and ends.
  */
 bool startBackTrackingClosed(coord initial) {
 	printf("Mode: closed.\n");
+	// https://de.wikipedia.org/wiki/Springerproblem#Schwenksches_Theorem
+	if( (sizeX % 2 != 0 && sizeY % 2 != 0) || (sizeX==1||sizeX==2||sizeX==4) 
+	    || (sizeX==3 && (sizeY==4||sizeY==6||sizeY==8) ) ) {
+	    printf("Der Kenner sieht sofort das dies keine Lösung haben kann.\n");
+	    return false;
+	}
+	
+	printf("test");
     return backTracking(initial, initial);
 }
 
@@ -402,7 +415,7 @@ int main() {
     switch (option) {
 
         case 1: { // open with initial values pre-defined
-        printf("Starting at Position (1,1).\n");
+            printf("Starting at Position (1,1).\n");
             coord initial = { .x = 0 , .y = 0 };
             result = startBackTracking(initial);
             break;
@@ -417,7 +430,7 @@ int main() {
             result = startBackTrackingClosed(initial);
             break;
         }
-        case 4: {
+        case 4: { // initial position and destination given
             initial = setupPosition("Initial");
             coord final = setupPosition("Final");
             result = startBackTrackingDest(initial, final);
