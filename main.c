@@ -198,7 +198,6 @@ bool backTrackingAlgorithm(coord pos, coord final, int counter,
                            int *tries, int modifier) {
     setFieldVal(pos, true);
     (*tries)--;
-    //printf("%d--", *tries );
 
     if (counter == (sizeX * sizeY - 1)) {
     	for (int i = 0; i < 8; i++) {
@@ -341,17 +340,14 @@ void resetBoardAndSteps() {
  * final pos: Final position which the method tries to reach, if there
  */
 bool backTracking(coord initial, coord final) {
-    printf("test");
     int maxTries = sizeX * sizeY - 1;
     while (true) {
         for (int i = 0; i < 8; i++) {
             int tries = maxTries;
-            printf("%d", i);
             if (backTrackingAlgorithm(initial, final, 0, &tries, i)) return true;
             resetBoardAndSteps();
 
         }
-        printf("%d", maxTries);
         maxTries *= 2;
     }
 }
@@ -363,7 +359,11 @@ bool backTracking(coord initial, coord final) {
   * coord initial: Coordinate at which the knights tour starts.
  */
 bool startBackTracking(coord initial) {
-	printf("Mode: normal.\n");
+    // z.B. 9x9 Groß und startet auf Weiß --> http://i.imgur.com/rYdeDvf.png
+    if( (sizeX % 2 != 0 && sizeY % 2 != 0) && (initial.x + initial.y) % 2 != 0 ) {
+        printf("Der Kenner sieht sofort das dies keine Lösung haben kann.\n");
+        return false;
+    }
     return backTracking(initial, invalid);
 }
 
@@ -374,15 +374,12 @@ bool startBackTracking(coord initial) {
  * coord initial: Coordinate at which the knights tour starts and ends.
  */
 bool startBackTrackingClosed(coord initial) {
-	printf("Mode: closed.\n");
 	// https://de.wikipedia.org/wiki/Springerproblem#Schwenksches_Theorem
 	if( (sizeX % 2 != 0 && sizeY % 2 != 0) || (sizeX==1||sizeX==2||sizeX==4) 
 	    || (sizeX==3 && (sizeY==4||sizeY==6||sizeY==8) ) ) {
 	    printf("Der Kenner sieht sofort das dies keine Lösung haben kann.\n");
 	    return false;
 	}
-	
-	printf("test");
     return backTracking(initial, initial);
 }
 
