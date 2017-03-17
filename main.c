@@ -182,6 +182,16 @@ int countPossibleSteps(coord initial) {
     return result;
 }
 
+int compare (const void * a, const void * b) {
+   int res = (*(extCoord*)a).possibleSteps - (*(extCoord*)b).possibleSteps;
+   
+   if (res == 0) {
+       return res;
+   } else {
+       return res;
+   }
+}
+
 /*
  * Returns if a knights tour is possible and fills the steps array
  * with the route of the knights tour.
@@ -229,19 +239,19 @@ bool backTrackingAlgorithm(coord pos, coord final, int counter,
             followingSteps[i].position = buffer;
         }
     }
+    
+    qsort(followingSteps, 8, sizeof(extCoord), compare);
 
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            if (followingSteps[j].possibleSteps == i) {
-                if ( *tries <= 0 ) {
-                    setFieldVal(pos, false);
-                    return false;
-                }
-                if ( backTrackingAlgorithm(followingSteps[j].position, final,
-                                           counter + 1, tries, modifier)) {
-                    addStepToSteps(pos, counter);
-                    return true;
-                }
+    for (int j = 0; j < 8; j++) {
+        if (followingSteps[j].possibleSteps != -1) {
+            if ( *tries <= 0 ) {
+                setFieldVal(pos, false);
+                return false;
+            }
+            if ( backTrackingAlgorithm(followingSteps[j].position, final,
+                                       counter + 1, tries, modifier)) {
+                addStepToSteps(pos, counter);
+                return true;
             }
         }
     }
