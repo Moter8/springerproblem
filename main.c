@@ -2,17 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-
-// Löschen? Farben werden kaum benutzt
-#ifdef _WIN32
-    #define ANSI_COLOR_GREEN  ""
-    #define ANSI_COLOR_RED    ""
-    #define ANSI_COLOR_RESET  ""
-#else
-    #define ANSI_COLOR_GREEN  "\x1b[32m"
-    #define ANSI_COLOR_RED    "\x1b[31m"
-    #define ANSI_COLOR_RESET  "\x1b[0m"
-#endif
+#include <math.h>
 
 // Beschreibung der Aufgabe: https://drive.google.com/file/d/0BzRp-cLiZDUJcWNUWDdVN3F3SjQ/view?usp=sharing
 
@@ -100,7 +90,7 @@ bool getFieldVal(coord pos) {
  * Sets the value of a field to true or false.
  * coord pos: The position which is set.
  */
-bool setFieldVal(coord pos, bool val) {
+void setFieldVal(coord pos, bool val) {
     *(board + pos.y*sizeX + pos.x) = val;
 }
 
@@ -183,10 +173,14 @@ int countPossibleSteps(coord initial) {
 }
 
 int compare (const void * a, const void * b) {
-   int res = (*(extCoord*)a).possibleSteps - (*(extCoord*)b).possibleSteps;
+   extCoord aExt = *(extCoord*)a;
+   extCoord bExt = *(extCoord*)b;
+   int res = aExt.possibleSteps - bExt.possibleSteps;
    
    if (res == 0) {
-       return res;
+       double distA = sqrt( pow((sizeX-1)/2.0 - aExt.position.x,2) + pow((sizeY-1)/2.0 - aExt.position.y,2));
+       double distB = sqrt( pow((sizeX-1)/2.0 - bExt.position.x,2) + pow((sizeY-1)/2.0 - bExt.position.y,2));
+       return distA - distB;
    } else {
        return res;
    }
@@ -204,16 +198,14 @@ int compare (const void * a, const void * b) {
  *             method returns false and terminates.
  * int modifier: Modifies the order in which the next step is calculated.
  */
-bool backTrackingAlgorithm(coord pos, coord final, int counter,
-                           int *tries, int modifier) {
+bool backTrackingAlgorithm(coord pos, coord final, int counter, int modifier) {
     setFieldVal(pos, true);
-    (*tries)--;
 
     if (counter == (sizeX * sizeY - 1)) {
     	for (int i = 0; i < 8; i++) {
     		coord buffer = getFieldByNumber(pos, i, 0);
     		if ((buffer.x == final.x && buffer.y == final.y) 
-    		    || final.x == -1 && final.y == -1) {
+    		    || (final.x == -1 && final.y == -1)) {
     	        addStepToSteps(pos, counter);
     	        return true;
     		}
@@ -244,12 +236,8 @@ bool backTrackingAlgorithm(coord pos, coord final, int counter,
 
     for (int j = 0; j < 8; j++) {
         if (followingSteps[j].possibleSteps != -1) {
-            if ( *tries <= 0 ) {
-                setFieldVal(pos, false);
-                return false;
-            }
             if ( backTrackingAlgorithm(followingSteps[j].position, final,
-                                       counter + 1, tries, modifier)) {
+                                       counter + 1, modifier)) {
                 addStepToSteps(pos, counter);
                 return true;
             }
@@ -350,6 +338,7 @@ void resetBoardAndSteps() {
  * final pos: Final position which the method tries to reach, if there
  */
 bool backTracking(coord initial, coord final) {
+    /*
     int maxTries = sizeX * sizeY - 1;
     while (true) {
         for (int i = 0; i < 8; i++) {
@@ -360,6 +349,8 @@ bool backTracking(coord initial, coord final) {
         }
         maxTries *= 2;
     }
+    */
+    return backTrackingAlgorithm(initial, final,0 ,0);
 }
 
 /*
@@ -371,7 +362,7 @@ bool backTracking(coord initial, coord final) {
 bool startBackTracking(coord initial) {
     // z.B. 9x9 Groß und startet auf Weiß --> http://i.imgur.com/rYdeDvf.png
     if( (sizeX % 2 != 0 && sizeY % 2 != 0) && (initial.x + initial.y) % 2 != 0 ) {
-        printf("Der Kenner sieht sofort das dies keine Lösung haben kann.\n");
+        printf("This position combined with this specific board size has no solution.\n");
         return false;
     }
     return backTracking(initial, invalid);
@@ -387,7 +378,7 @@ bool startBackTrackingClosed(coord initial) {
 	// https://de.wikipedia.org/wiki/Springerproblem#Schwenksches_Theorem
 	if( (sizeX % 2 != 0 && sizeY % 2 != 0) || (sizeX==1||sizeX==2||sizeX==4) 
 	    || (sizeX==3 && (sizeY==4||sizeY==6||sizeY==8) ) ) {
-	    printf("Der Kenner sieht sofort das dies keine Lösung haben kann.\n");
+	    printf("This specific board size does not have a closed solution.\n");
 	    return false;
 	}
     return backTracking(initial, initial);
@@ -401,7 +392,6 @@ bool startBackTrackingClosed(coord initial) {
  * coord final: Coordinate at which the knights tour ends.
  */
 bool startBackTrackingDest(coord initial, coord final) {
-	printf("Mode: given destination.\n");
     return backTracking(initial, final);
 }
 
@@ -438,17 +428,18 @@ int main() {
             break;
         }
         case 4: { // initial position and destination given
+        // TODO: FIX
             initial = setupPosition("Initial");
             coord final = setupPosition("Final");
+            printf("%d,%d - %d,%d\n",initial.x, initial.y, final.x, final.y);
             result = startBackTrackingDest(initial, final);
             break;
         }
     }
 
     if(result) {
-        printf( ANSI_COLOR_GREEN "\nA solution has been found!\n"
-                ANSI_COLOR_RESET);
-        printf("\nSolution Steps:\n");
+        printf("\nA solution has been found!\n");
+        printf("\nSolution Steps:\n\n");
         printSteps();
     } else {
         printf("No solution could be found, please try other values!\n");
