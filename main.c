@@ -22,50 +22,7 @@ int *steps;
 
 const coord invalid = { .x = -1, .y = -1};
 
-/*
- * Returns how many digits one number has.
- *
- * int num: The number of which the digits are counted.
- */
-int lengthInt(int num) {
-    int result = 0;
-    while (num != 0 ) {
-        result++;
-        num /= 10;
-    }
-    return result;
-}
-
-/*
- * Prints out a grid of the order with which the Knight moved.
- */
-void printSteps() {
-    int stepsAmount = sizeX*sizeY;
-    int magnitude = lengthInt(stepsAmount);
-    
-    char printfFormat[30] = "%0";
-    char magnitudeString[10];
-    
-    /*
-     * printfFormat = "%0Xd\n"
-     * X is the number of digits that the largest step contains
-     * Used to print out leading 0's so the grid stays aligned
-     */
-    
-    sprintf(magnitudeString, "%d", magnitude);
-    strcat(printfFormat, magnitudeString);
-    strcat(printfFormat, "d  ");
-     
-    for(int x = 0; x < sizeX; x++) {
-        for(int y = 0; y < sizeY; y++) {
-            printf(printfFormat, *(steps + y*sizeX + x) + 1);
-        }
-        printf("\n");
-        printf("\n");
-    }
-
-    printf("\n");
-}
+//Algorithmus
 
 /*
  * Returns whether a calculated position is withing the board boundaries.
@@ -264,89 +221,6 @@ bool backTrackingAlgorithm(coord pos, coord final, int counter, int modifier) {
     return false;
 }
 
-/*
- * Flushes the standard input stream to "clean" unused input
- * 
- * Source: http://stackoverflow.com/a/27281028/3991578
- */
-void flushStdIn() {
-  int ch;
-  while(((ch = getchar()) !='\n') && (ch != EOF));
-}
-
-/*
- * Prompts for an integer between 0 and an upper Limit
- * 
- * char prompt[]: String that is displayed to the user as a prompt
- * 
- * int upperLimit: Limits the integer which can be input
- */
-int promptForDigitsWithLimit(char prompt[], int upperLimit) {
-    while(true) {
-        int input;
-        printf("%s: ", prompt);
-        if (scanf("%d", &input) <= 0) {
-            printf("Input must be a number.\n");
-        } else if (input > upperLimit && upperLimit != -1) {
-            printf("Number can't be greater than %d.\n", upperLimit);
-        } else if (input <= 0) {
-            printf("Number must be greater than 0.\n");
-        } else {
-            return input;
-        }
-        flushStdIn();
-    }
-}
-
-/*
- * Prompt for an integer larger than 0
- * 
- * char prompt[]: String that is displayed to the user as a prompt
- */
-int promptForDigits(char prompt[]) {
-    return promptForDigitsWithLimit(prompt, -1);
-}
-
-
-/*
- * Prompts the user for the board size and sets the according variables
- */
-void setupBoardSize() {
-    sizeX = promptForDigits("Board Size (x)");
-    sizeY = promptForDigits("Board Size (y)");
-}
-
-/*
- * Prompts the user for the Initial or Destination X and Y Positions
- * and returns a coord variable with these values
- *
- * char option[]: Prefixes the prompt to indicateIntitial/Destination positions
- */
-coord setupPosition(char option[]) {
-    int length = strlen(option) + 12;
-    char *stringXPos = malloc(length * sizeof(char));
-    char *stringYPos = malloc(length * sizeof(char));
-    strcat(stringXPos, option);
-    strcat(stringXPos, " X Position");
-    strcat(stringYPos, option);
-    strcat(stringYPos, " Y Position");
-    
-    coord setup = {
-        // Subtract 1 from the given input to go from 1-indexed to 0-indexed.
-        .x = promptForDigitsWithLimit(stringXPos, sizeX) - 1,
-        .y = promptForDigitsWithLimit(stringYPos, sizeY) - 1
-    };
-    return setup;
-}
-
-/*
- * (Re-)Initialize board and step array with the values 0.
- */
-void resetBoardAndSteps() {
-    board = (bool *)calloc(sizeX * sizeY, sizeof(bool));
-    steps = (int *)calloc(sizeX * sizeY, sizeof(int));
-}
-
 /* Returns if a solution is possible, and fills the steps array with the
  * needed steps to perform the knights tour. Tries different modifier for 
  * the backtracking method.
@@ -402,6 +276,137 @@ bool startBackTrackingClosed(coord initial) {
 	}
     return backTracking(initial, initial);
 }
+
+// Input & Output
+
+/*
+ * (Re-)Initialize board and step array with the values 0.
+ */
+void resetBoardAndSteps() {
+    board = (bool *)calloc(sizeX * sizeY, sizeof(bool));
+    steps = (int *)calloc(sizeX * sizeY, sizeof(int));
+}
+
+/*
+ * Returns how many digits one number has.
+ *
+ * int num: The number of which the digits are counted.
+ */
+int lengthInt(int num) {
+    int result = 0;
+    while (num != 0 ) {
+        result++;
+        num /= 10;
+    }
+    return result;
+}
+
+/*
+ * Prints out a grid of the order with which the Knight moved.
+ */
+void printSteps() {
+    int stepsAmount = sizeX*sizeY;
+    int magnitude = lengthInt(stepsAmount);
+    
+    char printfFormat[30] = "%0";
+    char magnitudeString[10];
+    
+    /*
+     * printfFormat = "%0Xd\n"
+     * X is the number of digits that the largest step contains
+     * Used to print out leading 0's so the grid stays aligned
+     */
+    
+    sprintf(magnitudeString, "%d", magnitude);
+    strcat(printfFormat, magnitudeString);
+    strcat(printfFormat, "d  ");
+     
+    for(int x = 0; x < sizeX; x++) {
+        for(int y = 0; y < sizeY; y++) {
+            printf(printfFormat, *(steps + y*sizeX + x) + 1);
+        }
+        printf("\n");
+        printf("\n");
+    }
+
+    printf("\n");
+}
+
+
+/*
+ * Flushes the standard input stream to "clean" unused input
+ * 
+ * Source: http://stackoverflow.com/a/27281028/3991578
+ */
+void flushStdIn() {
+  int ch;
+  while(((ch = getchar()) !='\n') && (ch != EOF));
+}
+
+/*
+ * Prompts for an integer between 0 and an upper Limit
+ * 
+ * char prompt[]: String that is displayed to the user as a prompt
+ * 
+ * int upperLimit: Limits the integer which can be input
+ */
+int promptForDigitsWithLimit(char prompt[], int upperLimit) {
+    while(true) {
+        int input;
+        printf("%s: ", prompt);
+        if (scanf("%d", &input) <= 0) {
+            printf("Input must be a number.\n");
+        } else if (input > upperLimit && upperLimit != -1) {
+            printf("Number can't be greater than %d.\n", upperLimit);
+        } else if (input <= 0) {
+            printf("Number must be greater than 0.\n");
+        } else {
+            return input;
+        }
+        flushStdIn();
+    }
+}
+
+/*
+ * Prompt for an integer larger than 0
+ * 
+ * char prompt[]: String that is displayed to the user as a prompt
+ */
+int promptForDigits(char prompt[]) {
+    return promptForDigitsWithLimit(prompt, -1);
+}
+
+/*
+ * Prompts the user for the board size and sets the according variables
+ */
+void setupBoardSize() {
+    sizeX = promptForDigits("Board Size (x)");
+    sizeY = promptForDigits("Board Size (y)");
+}
+
+/*
+ * Prompts the user for the Initial or Destination X and Y Positions
+ * and returns a coord variable with these values
+ *
+ * char option[]: Prefixes the prompt to indicateIntitial/Destination positions
+ */
+coord setupPosition(char option[]) {
+    int length = strlen(option) + 12;
+    char *stringXPos = malloc(length * sizeof(char));
+    char *stringYPos = malloc(length * sizeof(char));
+    strcat(stringXPos, option);
+    strcat(stringXPos, " X Position");
+    strcat(stringYPos, option);
+    strcat(stringYPos, " Y Position");
+    
+    coord setup = {
+        // Subtract 1 from the given input to go from 1-indexed to 0-indexed.
+        .x = promptForDigitsWithLimit(stringXPos, sizeX) - 1,
+        .y = promptForDigitsWithLimit(stringYPos, sizeY) - 1
+    };
+    return setup;
+}
+
 
 int main() {
     
