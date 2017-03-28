@@ -24,6 +24,7 @@ const coord invalid = { .x = -1, .y = -1};
 
 /*
  * Returns how many digits one number has.
+ *
  * int num: The number of which the digits are counted.
  */
 int lengthInt(int num) {
@@ -68,6 +69,7 @@ void printSteps() {
 
 /*
  * Returns whether a calculated position is withing the board boundaries.
+ *
  * coord pos: The position which is checked.
  */
 bool checkValid(coord pos) {
@@ -76,6 +78,7 @@ bool checkValid(coord pos) {
 
 /*
  * Returns whether a field has already been visited or not.
+ *
  * coord pos: The position which is checked.
  */
 bool getFieldVal(coord pos) {
@@ -88,6 +91,7 @@ bool getFieldVal(coord pos) {
 
 /*
  * Sets the value of a field to true or false.
+ *
  * coord pos: The position which is set.
  */
 void setFieldVal(coord pos, bool val) {
@@ -97,7 +101,9 @@ void setFieldVal(coord pos, bool val) {
 /*
  * Returns a coordinate, which is calculated from the fieldnumber and the
  * given position.
+ *
  * coord pos: the given position
+ *
  * int fieldNumber: indicates which coordinate relative to the position will
  *                  be returned
  */
@@ -143,7 +149,9 @@ coord getFieldByNumber(coord pos, int fieldNumber, int modifier) {
 
 /*
  * Adds a step to the step array for the result output.
+ *
  * int step: The number of the step which is added.
+ *
  * coord pos: Coordinates of the step which is added.
  */
 bool addStepToSteps(coord pos, int step) {
@@ -158,6 +166,7 @@ bool addStepToSteps(coord pos, int step) {
 /*
  * Returns how many steps can be performed from this field
  * after having moved one step further.
+ *
  * coord initial: The field from which the steps are counted.
  */
 int countPossibleSteps(coord initial) {
@@ -189,13 +198,18 @@ int compare (const void * a, const void * b) {
 /*
  * Returns if a knights tour is possible and fills the steps array
  * with the route of the knights tour.
+ *
  * coord pos: Current position of the method.
+ *
  * final pos: Final position which the method tries to reach, if there
  *            is no given final position it is -1 , -1.
+ *
  * int counter: Counts the moved steps to check if the method is finished,
  *           the starting value is 0.
+ *
  * int *tries: pointer to an int which displays the left tries, until the
  *             method returns false and terminates.
+ *
  * int modifier: Modifies the order in which the next step is calculated.
  */
 bool backTrackingAlgorithm(coord pos, coord final, int counter, int modifier) {
@@ -232,11 +246,13 @@ bool backTrackingAlgorithm(coord pos, coord final, int counter, int modifier) {
         }
     }
     
+    // Sort the positions from where the least amount
+    // of steps are possible to speed up the algorithm.
     qsort(followingSteps, 8, sizeof(extCoord), compare);
 
     for (int j = 0; j < 8; j++) {
         if (followingSteps[j].possibleSteps != -1) {
-            if ( backTrackingAlgorithm(followingSteps[j].position, final,
+            if (backTrackingAlgorithm(followingSteps[j].position, final,
                                        counter + 1, modifier)) {
                 addStepToSteps(pos, counter);
                 return true;
@@ -251,7 +267,7 @@ bool backTrackingAlgorithm(coord pos, coord final, int counter, int modifier) {
 /*
  * Flushes the standard input stream to "clean" unused input
  * 
- * See http://stackoverflow.com/a/27281028/3991578 for more info
+ * Source: http://stackoverflow.com/a/27281028/3991578
  */
 void flushStdIn() {
   int ch;
@@ -265,7 +281,7 @@ void flushStdIn() {
  * 
  * int upperLimit: Limits the integer which can be input
  */
-int promptForDigitsLimit(char prompt[], int upperLimit) {
+int promptForDigitsWithLimit(char prompt[], int upperLimit) {
     while(true) {
         int input;
         printf("%s: ", prompt);
@@ -288,7 +304,7 @@ int promptForDigitsLimit(char prompt[], int upperLimit) {
  * char prompt[]: String that is displayed to the user as a prompt
  */
 int promptForDigits(char prompt[]) {
-    return promptForDigitsLimit(prompt, -1);
+    return promptForDigitsWithLimit(prompt, -1);
 }
 
 
@@ -316,9 +332,9 @@ coord setupPosition(char option[]) {
     strcat(stringYPos, " Y Position");
     
     coord setup = {
-        // Subtract 1 from the given value to go from 1-indexed to 0-indexed.
-        .x = promptForDigitsLimit(stringXPos, sizeX) - 1,
-        .y = promptForDigitsLimit(stringYPos, sizeY) - 1
+        // Subtract 1 from the given input to go from 1-indexed to 0-indexed.
+        .x = promptForDigitsWithLimit(stringXPos, sizeX) - 1,
+        .y = promptForDigitsWithLimit(stringYPos, sizeY) - 1
     };
     return setup;
 }
@@ -334,7 +350,9 @@ void resetBoardAndSteps() {
 /* Returns if a solution is possible, and fills the steps array with the
  * needed steps to perform the knights tour. Tries different modifier for 
  * the backtracking method.
+ *
  * coord pos: Current position of the method.
+ *
  * final pos: Final position which the method tries to reach, if there
  */
 bool backTracking(coord initial, coord final) {
@@ -350,17 +368,17 @@ bool backTracking(coord initial, coord final) {
         maxTries *= 2;
     }
     */
-    return backTrackingAlgorithm(initial, final,0 ,0);
+    return backTrackingAlgorithm(initial, final, 0 , 0);
 }
 
 /*
  * Returns if there is a possible solution for the knights tour
  * on the current field size.
  * If found, the solution is saved in steps.
-  * coord initial: Coordinate at which the knights tour starts.
+ *
+ * coord initial: Coordinate at which the knights tour starts.
  */
 bool startBackTracking(coord initial) {
-    // z.B. 9x9 Groß und startet auf Weiß --> http://i.imgur.com/rYdeDvf.png
     if( (sizeX % 2 != 0 && sizeY % 2 != 0) && (initial.x + initial.y) % 2 != 0 ) {
         printf("This position combined with this specific board size has no solution.\n");
         return false;
@@ -372,6 +390,7 @@ bool startBackTracking(coord initial) {
  * Returns true if there is a possible solution for a closed knights tour
  * on the current field size.
  * If found, the solution is saved in steps.
+ *
  * coord initial: Coordinate at which the knights tour starts and ends.
  */
 bool startBackTrackingClosed(coord initial) {
@@ -388,7 +407,9 @@ bool startBackTrackingClosed(coord initial) {
  * Returns true if there is a possible solution for the knights tour,
  * on the current field size with a given final destination.
  * If found, the solution is saved in steps.
+ *
  * coord initial: Coordinate at which the knights tour starts.
+ *
  * coord final: Coordinate at which the knights tour ends.
  */
 bool startBackTrackingDest(coord initial, coord final) {
@@ -402,7 +423,7 @@ int main() {
     printf("3: Startfeld wird vom Anwender frei gewählt, der Springer geht einen geschlossenen Pfad.\n");
     printf("4: Startfeld und erreichbares Endfeld werden vom Anwender frei gewählt.\n");
     
-    int option = promptForDigitsLimit("Wählen Sie bitte zwischen den Optionen 1, 2, 3 und 4 aus", 4);
+    int option = promptForDigitsWithLimit("Wählen Sie bitte zwischen den Optionen 1, 2 und 3 aus", 3);
     bool result = false;
     coord initial;
     
@@ -411,28 +432,20 @@ int main() {
     
     switch (option) {
 
-        case 1: { // open with initial values pre-defined
+        case 1: { // open tour with initial values pre-defined
             printf("Starting at Position (1,1).\n");
             coord initial = { .x = 0 , .y = 0 };
             result = startBackTracking(initial);
             break;
         }
-        case 2: { // open
+        case 2: { // open tour
             initial = setupPosition("Initial");
             result = startBackTracking(initial);
             break;
         }
-        case 3: { // closed
+        case 3: { // closed tour
             initial = setupPosition("Initial");
             result = startBackTrackingClosed(initial);
-            break;
-        }
-        case 4: { // initial position and destination given
-        // TODO: FIX
-            initial = setupPosition("Initial");
-            coord final = setupPosition("Final");
-            printf("%d,%d - %d,%d\n",initial.x, initial.y, final.x, final.y);
-            result = startBackTrackingDest(initial, final);
             break;
         }
     }
