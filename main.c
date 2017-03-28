@@ -144,6 +144,10 @@ int compare (const void * a, const void * b) {
    int res = aExt.possibleSteps - bExt.possibleSteps;
    
    if (res == 0) {
+       // If two positions have the same amount of possible steps,
+       // the Euclidian distance between each position and the
+       // middlepoint of the board are compared to speed up
+       // the algorithm.
        double distA = sqrt( pow((sizeX-1)/2.0 - aExt.position.x,2) + pow((sizeY-1)/2.0 - aExt.position.y,2));
        double distB = sqrt( pow((sizeX-1)/2.0 - bExt.position.x,2) + pow((sizeY-1)/2.0 - bExt.position.y,2));
        return distA - distB;
