@@ -1,6 +1,6 @@
 # Springerproblem
 
-## Compilation copypasta
+## Building
 
 Compile with optimization, using the C99 standard and displaying all warnings:
 
