@@ -403,19 +403,6 @@ bool startBackTrackingClosed(coord initial) {
     return backTracking(initial, initial);
 }
 
-/*
- * Returns true if there is a possible solution for the knights tour,
- * on the current field size with a given final destination.
- * If found, the solution is saved in steps.
- *
- * coord initial: Coordinate at which the knights tour starts.
- *
- * coord final: Coordinate at which the knights tour ends.
- */
-bool startBackTrackingDest(coord initial, coord final) {
-    return backTracking(initial, final);
-}
-
 int main() {
     
     printf("1: Startfeld wird vom Programm gewählt.\n");
