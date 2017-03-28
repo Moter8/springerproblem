@@ -408,7 +408,6 @@ int main() {
     printf("1: Startfeld wird vom Programm gewählt.\n");
     printf("2: Startfeld wird vom Anwender frei gewählt.\n");
     printf("3: Startfeld wird vom Anwender frei gewählt, der Springer geht einen geschlossenen Pfad.\n");
-    printf("4: Startfeld und erreichbares Endfeld werden vom Anwender frei gewählt.\n");
     
     int option = promptForDigitsWithLimit("Wählen Sie bitte zwischen den Optionen 1, 2 und 3 aus", 3);
     bool result = false;
