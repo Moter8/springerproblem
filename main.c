@@ -67,40 +67,11 @@ void setFieldVal(coord pos, bool val) {
 coord getFieldByNumber(coord pos, int fieldNumber, int modifier) {
     fieldNumber = (fieldNumber + modifier)%8;
     if (modifier >= 8) fieldNumber = (fieldNumber + 4)%8;
-    switch (fieldNumber) {
-        case 0:
-            pos.x += 2;
-            pos.y += 1;
-            break;
-        case 1:
-            pos.x += 2;
-            pos.y -= 1;
-            break;
-        case 2:
-            pos.x -= 2;
-            pos.y += 1;
-            break;
-        case 3:
-            pos.x -= 2;
-            pos.y -= 1;
-            break;
-        case 4:
-            pos.x += 1;
-            pos.y += 2;
-            break;
-        case 5:
-            pos.x += 1;
-            pos.y -= 2;
-            break;
-        case 6:
-            pos.x -= 1;
-            pos.y += 2;
-            break;
-        case 7:
-            pos.x -= 1;
-            pos.y -= 2;
-            break;
-    }
+
+    int n = fieldNumber
+    pos.x = (-(n/2%2*2)+1) * (2-n/4)
+    pos.y = (-(n%2*2)+1) * (n/4+1)
+
     return pos;
 }
 
