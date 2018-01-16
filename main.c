@@ -68,9 +68,9 @@ coord getFieldByNumber(coord pos, int fieldNumber, int modifier) {
     fieldNumber = (fieldNumber + modifier)%8;
     if (modifier >= 8) fieldNumber = (fieldNumber + 4)%8;
 
-    int n = fieldNumber
-    pos.x = (-(n/2%2*2)+1) * (2-n/4)
-    pos.y = (-(n%2*2)+1) * (n/4+1)
+    int n = fieldNumber;
+    pos.x = (-(n/2%2*2)+1) * (2-n/4);
+    pos.y = (-(n%2*2)+1) * (n/4+1);
 
     return pos;
 }
