@@ -1,3 +1,9 @@
+/*
+* MIT License
+* Copyright (c) 2017 Carsten Hagemann, Niklas Portmann, Felix Bertsch
+* See LICENSE file.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
